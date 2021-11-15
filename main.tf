@@ -229,3 +229,10 @@ resource "azurerm_linux_virtual_machine" "KWorker" {
     "type" = "worker"
   }
 }
+
+resource "azurerm_public_ip" "KTHW_LB_IP" {
+  name                = "KTHW_LB_IP"
+  resource_group_name = azurerm_resource_group.KTHW_RG.name
+  location            = azurerm_resource_group.KTHW_RG.location
+  allocation_method   = "Static"
+}
