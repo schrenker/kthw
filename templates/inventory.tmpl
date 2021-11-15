@@ -1,0 +1,12 @@
+[jumpbox]
+${ansibleJumpbox} ansible_ssh_private_key_file=../priv.key
+
+[KControllers]
+%{ for ip in ansibleKControllers ~}
+${ip}
+%{ endfor ~}
+
+[KWorkers]
+%{ for ip in ansibleKWorkers ~}
+${ip}
+%{ endfor ~}
