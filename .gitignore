@@ -8,3 +8,7 @@ tmp/
 *.tfstate*
 priv.key
 pub.key
+
+ansible/.control
+ansible/ssh.cfg
+ansible/inventory
