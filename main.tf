@@ -84,9 +84,10 @@ resource "azurerm_public_ip" "jumpbox_ip" {
 }
 
 resource "azurerm_network_interface" "Jumpbox_NIC" {
-  name                = "Jumpbox_NIC"
-  resource_group_name = azurerm_resource_group.KTHW_RG.name
-  location            = azurerm_resource_group.KTHW_RG.location
+  name                 = "Jumpbox_NIC"
+  resource_group_name  = azurerm_resource_group.KTHW_RG.name
+  location             = azurerm_resource_group.KTHW_RG.location
+  enable_ip_forwarding = true
 
   ip_configuration {
     name                          = "jumpbox"
