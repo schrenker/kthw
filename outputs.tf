@@ -15,3 +15,11 @@ resource "local_file" "sshcfg" {
   })
   filename = "./ansible/ssh.cfg"
 }
+
+resource "local_file" "allvars" {
+  content = templatefile("./templates/all.yml.tmpl",
+    {
+      lb_ip = azurerm_public_ip.KTHW_LB_IP.ip_address
+  })
+  filename = "./ansible/group_vars/all.yml"
+}

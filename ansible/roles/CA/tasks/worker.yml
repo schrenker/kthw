@@ -1,0 +1,6 @@
+---
+- name: Generate worker certificate
+  template:
+    src: worker-csr.json.j2
+    dest: "/tmp/{{ worker }}-csr.json"
+...
