@@ -35,17 +35,17 @@ resource "azurerm_subnet_network_security_group_association" "KTHW_Subnet1_NSG" 
 }
 
 resource "azurerm_network_security_rule" "KTHW_NSG_Internal" {
-  name                        = "Internal"
-  priority                    = 100
-  direction                   = "Inbound"
-  access                      = "Allow"
-  protocol                    = "*"
-  source_port_range           = "*"
-  destination_port_range      = "*"
-  source_address_prefix       = "10.10.10.0/24"
-  destination_address_prefix  = "10.10.10.0/24"
-  resource_group_name         = azurerm_resource_group.KTHW_RG.name
-  network_security_group_name = azurerm_network_security_group.KTHW_NSG.name
+  name                         = "Internal"
+  priority                     = 100
+  direction                    = "Inbound"
+  access                       = "Allow"
+  protocol                     = "*"
+  source_port_range            = "*"
+  destination_port_range       = "*"
+  source_address_prefixes      = ["10.10.10.0/24", "10.10.240.0/24"]
+  destination_address_prefixes = ["10.10.10.0/24", "10.10.240.0/24"]
+  resource_group_name          = azurerm_resource_group.KTHW_RG.name
+  network_security_group_name  = azurerm_network_security_group.KTHW_NSG.name
 }
 
 resource "azurerm_network_security_rule" "KTHW_NSG_External" {
