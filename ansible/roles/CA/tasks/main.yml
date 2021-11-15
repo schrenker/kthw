@@ -33,6 +33,6 @@
     creates: /tmp/admin.pem
 
 - name: Generate worker nodes certificates
-  include: worker.yml worker={{item}}
-  with_items: "{{ groups['KWorkers'] }}"
+  include: worker.yml worker={{item}} worker_ip={{ hostvars[item].ansible_host }}
+  with_items: "{{ groups.KWorkers }}"
 ...
