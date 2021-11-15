@@ -1,0 +1,7 @@
+---
+- name: Generate CA and certificates locally
+  hosts: localhost
+  connection: local
+  roles:
+    - CA
+...

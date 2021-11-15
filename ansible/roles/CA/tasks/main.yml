@@ -1,0 +1,34 @@
+---
+- name: Copy ca-config.json to /tmp
+  copy:
+    src: ca-config.json
+    dest: /tmp/ca-config.json
+
+- name: Copy ca-csr.json to /tmp
+  copy:
+    src: ca-csr.json
+    dest: /tmp/ca-csr.json
+
+- name: Generate CA certificate and private key
+  shell:
+    cmd: "cfssl gencert -initca ca-csr.json | cfssljson -bare ca"
+    chdir: /tmp
+    creates: /tmp/ca.pem
+
+- name: Copy admin-csr.json to /tmp
+  copy:
+    src: admin-csr.json
+    dest: /tmp/admin-csr.json
+
+- name: Generate client certificate for admin user
+  shell:
+    cmd: >
+      cfssl gencert
+      -ca=ca.pem
+      -ca-key=ca-key.pem
+      -config=ca-config.json
+      -profile=kubernetes
+      admin-csr.json | cfssljson -bare admin
+    chdir: /tmp
+    creates: /tmp/admin.pem
+...
