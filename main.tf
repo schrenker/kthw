@@ -131,10 +131,11 @@ resource "azurerm_linux_virtual_machine" "Jumpbox" {
 }
 
 resource "azurerm_network_interface" "KController_NIC" {
-  count               = 2
-  name                = "${var.controller_name}_${count.index}"
-  resource_group_name = azurerm_resource_group.KTHW_RG.name
-  location            = azurerm_resource_group.KTHW_RG.location
+  count                = 2
+  name                 = "${var.controller_name}_${count.index}"
+  resource_group_name  = azurerm_resource_group.KTHW_RG.name
+  location             = azurerm_resource_group.KTHW_RG.location
+  enable_ip_forwarding = true
 
   ip_configuration {
     name                          = "internal"
@@ -163,6 +164,7 @@ resource "azurerm_linux_virtual_machine" "KController" {
   os_disk {
     caching              = "None"
     storage_account_type = "Standard_LRS"
+    disk_size_gb         = 50
   }
 
   source_image_reference {
@@ -175,5 +177,55 @@ resource "azurerm_linux_virtual_machine" "KController" {
   tags = {
     "env"  = "kthw"
     "type" = "controller"
+  }
+}
+
+resource "azurerm_network_interface" "KWorker_NIC" {
+  count                = 3
+  name                 = "${var.worker_name}_${count.index}"
+  resource_group_name  = azurerm_resource_group.KTHW_RG.name
+  location             = azurerm_resource_group.KTHW_RG.location
+  enable_ip_forwarding = true
+
+  ip_configuration {
+    name                          = "internal"
+    subnet_id                     = azurerm_subnet.KTHW_Subnet1.id
+    private_ip_address_allocation = "Static"
+    private_ip_address            = "10.10.10.2${count.index}"
+  }
+}
+
+resource "azurerm_linux_virtual_machine" "KWorker" {
+  count               = 3
+  name                = "${var.worker_name}${count.index}"
+  resource_group_name = azurerm_resource_group.KTHW_RG.name
+  location            = azurerm_resource_group.KTHW_RG.location
+  size                = "Standard_DS1_v2"
+  admin_username      = "azureuser"
+  network_interface_ids = [
+    azurerm_network_interface.KWorker_NIC[count.index].id
+  ]
+
+  admin_ssh_key {
+    username   = "azureuser"
+    public_key = file("./pub.key")
+  }
+
+  os_disk {
+    caching              = "None"
+    storage_account_type = "Standard_LRS"
+    disk_size_gb         = 50
+  }
+
+  source_image_reference {
+    publisher = "Canonical"
+    offer     = "UbuntuServer"
+    sku       = "18.04-LTS"
+    version   = "latest"
+  }
+
+  tags = {
+    "env"  = "kthw"
+    "type" = "worker"
   }
 }
