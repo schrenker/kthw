@@ -6,3 +6,5 @@ tmp/
 
 .terraform*
 *.tfstate*
+priv.key
+pub.key
