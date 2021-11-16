@@ -94,4 +94,14 @@
 
       kubectl config use-context default --kubeconfig=admin.kubeconfig
     chdir: /tmp
+
+- name: Generate encryption key
+  set_fact:
+    encryption_key: "{{ lookup('password', '/dev/null length=15 chars=ascii_letters') }}"
+
+- name: Generate encryption config file
+  template:
+    src: encryption-config.yaml.j2
+    dest: /tmp/encryption-config.yaml
+    force: false
 ...
