@@ -4,4 +4,29 @@
   connection: local
   roles:
     - CA
+
+- hosts: KWorkers
+  tasks:
+    - name: Distribute worker certificates
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+      with_items:
+        - {src: "/tmp/ca.pem", dest: "~/ca.pem"}
+        - {src: "/tmp/{{ inventory_hostname }}-key.pem", dest: "~/{{ inventory_hostname }}-key.pem"}
+        - {src: "/tmp/{{ inventory_hostname }}.pem", dest: "~/{{ inventory_hostname }}.pem"}
+
+- hosts: KControllers
+  tasks:
+    - name: Distribute controller certificates
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+      with_items:
+        - {src: "/tmp/ca.pem", dest: "~/ca.pem"}
+        - {src: "/tmp/ca-key.pem", dest: "~/ca-key.pem"}
+        - {src: "/tmp/kubernetes.pem", dest: "~/kubernetes.pem"}
+        - {src: "/tmp/kubernetes-key.pem", dest: "~/kubernetes-key.pem"}
+        - {src: "/tmp/service-account.pem", dest: "~/service-account.pem"}
+        - {src: "/tmp/service-account-key.pem", dest: "~/service-account-key.pem"}
 ...
