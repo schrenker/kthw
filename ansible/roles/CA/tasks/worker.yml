@@ -15,4 +15,5 @@
       -profile=kubernetes
       {{ worker }}-csr.json | cfssljson -bare {{ worker }}
     chdir: /tmp
+    creates: "/tmp/{{ worker }}.pem"
 ...
