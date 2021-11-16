@@ -1,5 +1,5 @@
 ---
-- name: kubeconfig set-cluster
+- name: Generate kubeconfig
   shell:
     cmd: >
       kubectl config set-cluster kubernetes-the-hard-way
@@ -7,30 +7,18 @@
       --embed-certs=true
       --server=https://{{ lb_ip }}:6443
       --kubeconfig={{ worker }}.kubeconfig
-    chdir: /tmp
 
-- name: kubeconfig set-credentials
-  shell:
-    cmd: >
       kubectl config set-credentials system:node:{{ worker }}
       --client-certificate={{ worker }}.pem
       --client-key={{ worker }}-key.pem
       --embed-certs=true
       --kubeconfig={{ worker }}.kubeconfig
-    chdir: /tmp
 
-- name: kubeconfig set-context
-  shell:
-    cmd: >
       kubectl config set-context default
       --cluster=kubernetes-the-hard-way
       --user=system:node:{{ worker }}
       --kubeconfig={{ worker }}.kubeconfig
-    chdir: /tmp
 
-- name: kubeconfig use-context
-  shell:
-    cmd: >
       kubectl config use-context default --kubeconfig={{ worker }}.kubeconfig
     chdir: /tmp
 ...

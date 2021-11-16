@@ -29,4 +29,10 @@
         - {src: "/tmp/kubernetes-key.pem", dest: "~/kubernetes-key.pem"}
         - {src: "/tmp/service-account.pem", dest: "~/service-account.pem"}
         - {src: "/tmp/service-account-key.pem", dest: "~/service-account-key.pem"}
+
+- name: Generate kubeconfig files locally
+  hosts: localhost
+  connection: local
+  roles:
+    - kubeconfig
 ...

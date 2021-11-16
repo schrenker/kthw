@@ -2,4 +2,7 @@
 - name: Generate kubeconfig for worker nodes
   include: worker.yml worker={{item}}
   with_items: "{{ groups.KWorkers }}"
+
+- name: Generate kube-proxy config file
+  include: kubeproxy.yml
 ...
