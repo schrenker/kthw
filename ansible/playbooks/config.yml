@@ -1,0 +1,38 @@
+---
+- hosts: localhost
+  connection: local
+  roles:
+    - CA
+    - kubeconfig
+
+- hosts: KWorkers
+  tasks:
+    - name: Distribute worker certificates and configs
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+      with_items:
+        - {src: "/tmp/ca.pem", dest: "~/ca.pem"}
+        - {src: "/tmp/{{ inventory_hostname }}-key.pem", dest: "~/{{ inventory_hostname }}-key.pem"}
+        - {src: "/tmp/{{ inventory_hostname }}.pem", dest: "~/{{ inventory_hostname }}.pem"}
+        - {src: "/tmp/{{ inventory_hostname }}.kubeconfig", dest: "~/{{ inventory_hostname }}.kubeconfig"}
+        - {src: "/tmp/kube-proxy.kubeconfig", dest: "~/kube-proxy.kubeconfig"}
+
+- hosts: KControllers
+  tasks:
+    - name: Distribute controller certificates and configs
+      copy:
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
+      with_items:
+        - {src: "/tmp/ca.pem", dest: "~/ca.pem"}
+        - {src: "/tmp/ca-key.pem", dest: "~/ca-key.pem"}
+        - {src: "/tmp/kubernetes.pem", dest: "~/kubernetes.pem"}
+        - {src: "/tmp/kubernetes-key.pem", dest: "~/kubernetes-key.pem"}
+        - {src: "/tmp/service-account.pem", dest: "~/service-account.pem"}
+        - {src: "/tmp/service-account-key.pem", dest: "~/service-account-key.pem"}
+        - {src: "/tmp/admin.kubeconfig", dest: "~/admin.kubeconfig"}
+        - {src: "/tmp/kube-controller-manager.kubeconfig", dest: "~/kube-controller-manager.kubeconfig"}
+        - {src: "/tmp/kube-scheduler.kubeconfig", dest: "~/kube-scheduler.kubeconfig"}
+        - {src: "/tmp/encryption-config.yaml", dest: "~/encryption-config.yaml"}
+...
