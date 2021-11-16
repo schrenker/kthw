@@ -34,6 +34,6 @@ for host in hosts:
 
 result = ""
 for i in range(len(ips)):
-    result = result + f"{hosts[i].split()[0]}=https://{ips[i]},"
+    result = result + f"{hosts[i].split()[0]}=https://{ips[i]}:2380,"
 
 print(result[:-1])
