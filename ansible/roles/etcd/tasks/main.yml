@@ -71,7 +71,6 @@
     group: root
     mode: '0644'
   become: true
-  notify: restart etcd
 
 - name: Start and enable etcd in systemd
   systemd:
@@ -79,4 +78,5 @@
     state: started
     enabled: true
     daemon_reload: true
+  become: true
 ...
