@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # [1] = path to inventory
 # [2] = etcd members
+# [3] = port
+# [4] = hosts? 0/1
 import sys
 import re
 
@@ -33,7 +35,11 @@ for host in hosts:
     ips.append(ip_pattern.search(host)[0])
 
 result = ""
-for i in range(len(ips)):
-    result = result + f"{hosts[i].split()[0]}=https://{ips[i]}:2380,"
+if int(sys.argv[4]) == 1:
+    for i in range(len(ips)):
+        result = result + f"{hosts[i].split()[0]}=https://{ips[i]}:{sys.argv[3]},"
+else:
+    for i in range(len(ips)):
+        result = result + f"https://{ips[i]}:{sys.argv[3]},"
 
 print(result[:-1])
