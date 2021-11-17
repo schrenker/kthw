@@ -2,3 +2,4 @@
 - hosts: KControllers
   roles:
     - etcd
+    - control_plane

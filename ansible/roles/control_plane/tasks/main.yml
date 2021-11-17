@@ -1,7 +1,7 @@
 ---
 - name: Fetch kube-apiserver to /usr/local/bin
   get_url:
-    url: {{item}}
+    url: "{{ item }}"
     dest: /usr/local/bin
     mode: '750'
     owner: root
@@ -13,13 +13,18 @@
     - "https://storage.googleapis.com/kubernetes-release/release/{{ control_plane_ver }}/bin/linux/amd64/kubectl"
   become: true
 
-- name: Create directory /var/lib/kubernetes
+- name: Create necessary directories
   file:
+    path: "{{ item }}"
     state: directory
     owner: root
     group: root
     mode: '0700'
   become: true
+  with_items:
+    - /etc/kubernetes
+    - /etc/kubernetes/config
+    - /var/lib/kubernetes
 
 - name: Copy certificates, configs and keys to /var/lib/kubernetes
   copy:
@@ -28,6 +33,7 @@
     owner: root
     group: root
     mode: '0600'
+    remote_src: true
   with_items:
     - ca.pem
     - ca-key.pem
@@ -37,6 +43,16 @@
     - service-account-key.pem
     - encryption-config.yaml
     - kube-controller-manager.kubeconfig
+    - kube-scheduler.kubeconfig
+  become: true
+
+- name: Copy config to /etc/kubernetes/config
+  copy:
+    src: kube-scheduler.yaml
+    dest: /etc/kubernetes/config
+    owner: root
+    group: root
+    mode: '0600'
   become: true
 
 - name: Get etcd peers string
@@ -61,5 +77,26 @@
     owner: root
     group: root
     mode: '0644'
+  become: true
+
+- name: Copy kube-scheduler systemd service
+  copy:
+    src: kube-scheduler.service
+    dest: /etc/systemd/system/kube-scheduler.service
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+
+- name: Start and enable kube-apiserver, kube-controller-manager, kube-scheduler
+  systemd:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+    daemon_reload: true
+  with_items:
+    - kube-apiserver
+    - kube-controller-manager
+    - kube-scheduler
   become: true
 ...
