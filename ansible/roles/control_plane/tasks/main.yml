@@ -21,7 +21,7 @@
     mode: '0700'
   become: true
 
-- name: Copy certificates and keys to /var/lib/kubernetes
+- name: Copy certificates, configs and keys to /var/lib/kubernetes
   copy:
     src: "{{ home }}/{{ item }}"
     dest: /var/lib/kubernetes
@@ -36,5 +36,30 @@
     - service-account.pem
     - service-account-key.pem
     - encryption-config.yaml
+    - kube-controller-manager.kubeconfig
+  become: true
+
+- name: Get etcd peers string
+  script: ../scripts/etcd_peers.py "../inventory" "KControllers"
+  register: etcd_peers
+  delegate_to: localhost
+  run_once: true
+
+- name: Copy kube-apiserver systemd service
+  template:
+    src: kube-apiserver.service.j2
+    dest: /etc/systemd/system/kube-apiserver.service
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+
+- name: Copy kube-controller-manager systemd service
+  template:
+    src: kube-controller-manager.service.j2
+    dest: /etc/systemd/system/kube-controller-manager.service
+    owner: root
+    group: root
+    mode: '0644'
   become: true
 ...
