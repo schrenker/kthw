@@ -1,0 +1,40 @@
+---
+- name: Fetch kube-apiserver to /usr/local/bin
+  get_url:
+    url: {{item}}
+    dest: /usr/local/bin
+    mode: '750'
+    owner: root
+    group: root
+  with_items:
+    - "https://storage.googleapis.com/kubernetes-release/release/{{ control_plane_ver }}/bin/linux/amd64/kube-apiserver"
+    - "https://storage.googleapis.com/kubernetes-release/release/{{ control_plane_ver }}/bin/linux/amd64/kube-controller-manager"
+    - "https://storage.googleapis.com/kubernetes-release/release/{{ control_plane_ver }}/bin/linux/amd64/kube-scheduler"
+    - "https://storage.googleapis.com/kubernetes-release/release/{{ control_plane_ver }}/bin/linux/amd64/kubectl"
+  become: true
+
+- name: Create directory /var/lib/kubernetes
+  file:
+    state: directory
+    owner: root
+    group: root
+    mode: '0700'
+  become: true
+
+- name: Copy certificates and keys to /var/lib/kubernetes
+  copy:
+    src: "{{ home }}/{{ item }}"
+    dest: /var/lib/kubernetes
+    owner: root
+    group: root
+    mode: '0600'
+  with_items:
+    - ca.pem
+    - ca-key.pem
+    - kubernetes.pem
+    - kubernetes-key.pem
+    - service-account.pem
+    - service-account-key.pem
+    - encryption-config.yaml
+  become: true
+...
