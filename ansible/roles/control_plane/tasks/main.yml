@@ -3,7 +3,7 @@
   get_url:
     url: "{{ item }}"
     dest: /usr/local/bin
-    mode: '750'
+    mode: '755'
     owner: root
     group: root
   with_items:
