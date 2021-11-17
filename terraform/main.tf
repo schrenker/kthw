@@ -110,7 +110,7 @@ resource "azurerm_linux_virtual_machine" "Jumpbox" {
 
   admin_ssh_key {
     username   = "azureuser"
-    public_key = file("./pub.key")
+    public_key = file("../pub.key")
   }
 
   os_disk {
@@ -159,7 +159,7 @@ resource "azurerm_linux_virtual_machine" "KController" {
 
   admin_ssh_key {
     username   = "azureuser"
-    public_key = file("./pub.key")
+    public_key = file("../pub.key")
   }
 
   os_disk {
@@ -209,7 +209,7 @@ resource "azurerm_linux_virtual_machine" "KWorker" {
 
   admin_ssh_key {
     username   = "azureuser"
-    public_key = file("./pub.key")
+    public_key = file("../pub.key")
   }
 
   os_disk {

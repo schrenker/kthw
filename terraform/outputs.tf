@@ -5,7 +5,7 @@ resource "local_file" "inventory" {
       ansibleKControllers = azurerm_linux_virtual_machine.KController.*.private_ip_address
       ansibleKWorkers     = azurerm_linux_virtual_machine.KWorker.*.private_ip_address
   })
-  filename = "./ansible/inventory"
+  filename = "../ansible/inventory"
 }
 
 resource "local_file" "sshcfg" {
@@ -13,7 +13,7 @@ resource "local_file" "sshcfg" {
     {
       ansibleJumpbox = azurerm_linux_virtual_machine.Jumpbox.public_ip_address
   })
-  filename = "./ansible/ssh.cfg"
+  filename = "../ansible/ssh.cfg"
 }
 
 resource "local_file" "allvars" {
@@ -22,5 +22,5 @@ resource "local_file" "allvars" {
       lb_ip         = azurerm_public_ip.KTHW_LB_IP.ip_address
       controller_ip = join(",", azurerm_linux_virtual_machine.KController.*.private_ip_address)
   })
-  filename = "./ansible/group_vars/all.yml"
+  filename = "../ansible/group_vars/all.yml"
 }
