@@ -72,32 +72,32 @@
       kubectl config use-context default --kubeconfig=kube-scheduler.kubeconfig
     chdir: /tmp
 
-- name: Generate admin config file
+- name: Generate azureuser config file
   shell:
     cmd: >
       kubectl config set-cluster kubernetes-the-hard-way
       --certificate-authority=ca.pem
       --embed-certs=true
       --server=https://127.0.0.1:6443
-      --kubeconfig=admin.kubeconfig
+      --kubeconfig=azureuser.kubeconfig
 
-      kubectl config set-credentials admin
-      --client-certificate=admin.pem
-      --client-key=admin-key.pem
+      kubectl config set-credentials azureuser
+      --client-certificate=azureuser.pem
+      --client-key=azureuser-key.pem
       --embed-certs=true
-      --kubeconfig=admin.kubeconfig
+      --kubeconfig=azureuser.kubeconfig
 
       kubectl config set-context default
       --cluster=kubernetes-the-hard-way
-      --user=admin
-      --kubeconfig=admin.kubeconfig
+      --user=azureuser
+      --kubeconfig=azureuser.kubeconfig
 
-      kubectl config use-context default --kubeconfig=admin.kubeconfig
+      kubectl config use-context default --kubeconfig=azureuser.kubeconfig
     chdir: /tmp
 
 - name: Generate encryption key
   set_fact:
-    encryption_key: "{{ lookup('password', '/dev/null length=15 chars=ascii_letters') }}"
+    encryption_key: "{{ lookup('password', '/dev/null length=15 chars=ascii_letters') | b64encode }}"
 
 - name: Generate encryption config file
   template:

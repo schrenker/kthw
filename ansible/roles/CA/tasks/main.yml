@@ -15,12 +15,12 @@
     chdir: /tmp
     creates: /tmp/ca.pem
 
-- name: Copy admin-csr.json to /tmp
+- name: Copy azureuser-csr.json to /tmp
   copy:
-    src: admin-csr.json
-    dest: /tmp/admin-csr.json
+    src: azureuser-csr.json
+    dest: /tmp/azureuser-csr.json
 
-- name: Generate client certificate for admin user
+- name: Generate client certificate for azureuser user
   shell:
     cmd: >
       cfssl gencert
@@ -28,9 +28,9 @@
       -ca-key=ca-key.pem
       -config=ca-config.json
       -profile=kubernetes
-      admin-csr.json | cfssljson -bare admin
+      azureuser-csr.json | cfssljson -bare azureuser
     chdir: /tmp
-    creates: /tmp/admin.pem
+    creates: /tmp/azureuser.pem
 
 - name: Generate worker nodes certificates
   include: worker.yml worker={{item}} worker_ip={{ hostvars[item].ansible_host }}
