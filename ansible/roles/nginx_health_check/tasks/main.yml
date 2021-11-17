@@ -15,9 +15,7 @@
     group: root
     mode: '0644'
   become: true
-  notify: restart nginx
-
-- meta: flush_handlers
+  notify: reload nginx
 
 - name: Enable and start nginx
   systemd:

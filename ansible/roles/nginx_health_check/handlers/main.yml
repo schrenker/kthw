@@ -1,7 +1,7 @@
 ---
-- name: restart nginx
+- name: reload nginx
   systemd:
     name: nginx
-    state: restarted
+    state: reloaded
     enabled: true
 ...
