@@ -4,8 +4,6 @@
 tmp/
 
 
-.terraform*
-*.tfstate*
 priv.key
 pub.key
 
@@ -13,3 +11,6 @@ ansible/.control
 ansible/ssh.cfg
 ansible/inventory*
 ansible/group_vars/all.yml
+
+terraform/.terraform*
+terraform/*.tfstate*
