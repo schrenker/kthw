@@ -1,0 +1,5 @@
+---
+- hosts: KControllers[0]
+  roles:
+    - RBAC_kubelet
+...
