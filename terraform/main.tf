@@ -236,4 +236,53 @@ resource "azurerm_public_ip" "KTHW_LB_IP" {
   resource_group_name = azurerm_resource_group.KTHW_RG.name
   location            = azurerm_resource_group.KTHW_RG.location
   allocation_method   = "Static"
+  sku                 = "Standard"
 }
+
+resource "azurerm_lb" "LB" {
+  name                = "LB"
+  resource_group_name = azurerm_resource_group.KTHW_RG.name
+  location            = azurerm_resource_group.KTHW_RG.location
+  sku                 = "Standard"
+  sku_tier            = "Regional"
+
+  frontend_ip_configuration {
+    name                 = "PublicIP"
+    public_ip_address_id = azurerm_public_ip.KTHW_LB_IP.id
+    availability_zone    = "No-Zone"
+  }
+
+}
+
+resource "azurerm_lb_backend_address_pool" "KController_pool" {
+  loadbalancer_id = azurerm_lb.LB.id
+  name            = "KController_pool"
+}
+
+resource "azurerm_lb_backend_address_pool_address" "KController_address" {
+  count                   = 2
+  name                    = "KController${count.index}"
+  backend_address_pool_id = azurerm_lb_backend_address_pool.KController_pool.id
+  virtual_network_id      = azurerm_virtual_network.KTHW_VNet.id
+  ip_address              = "10.10.10.1${count.index}"
+}
+
+resource "azurerm_lb_rule" "inbound_kubectl" {
+  resource_group_name            = azurerm_resource_group.KTHW_RG.name
+  loadbalancer_id                = azurerm_lb.LB.id
+  name                           = "inbound_kubectl"
+  protocol                       = "Tcp"
+  frontend_port                  = "6443"
+  backend_port                   = "6443"
+  frontend_ip_configuration_name = "PublicIP"
+  backend_address_pool_ids       = [azurerm_lb_backend_address_pool.KController_pool.id]
+}
+
+# resource "azure_lb_probe" "healthz" {
+#   resource_group_name = azurerm_resource_group.KTHW_RG.name
+#   loadbalancer_id     = azurerm_lb.LB.id
+#   name                = "kubernetes_healthz"
+#   port                = 80
+#   protocol            = "Http"
+#   request_path        = "kubernetes.default.svc.cluster.local/healthz"
+# }
