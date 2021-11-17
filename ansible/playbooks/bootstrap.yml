@@ -3,3 +3,4 @@
   roles:
     - etcd
     - control_plane
+    - nginx_health_check
