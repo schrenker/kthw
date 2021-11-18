@@ -1,0 +1,14 @@
+---
+- hosts: localhost
+  connection: local
+  tasks:
+    - name: Fetch coredns deployment manifest
+      get_url:
+        url: https://storage.googleapis.com/kubernetes-the-hard-way/coredns-1.8.yaml
+        dest: /tmp/coredns
+
+    - name: Apply coredns deployment manifest
+      k8s:
+        state: present
+        src: /tmp/coredns
+...
