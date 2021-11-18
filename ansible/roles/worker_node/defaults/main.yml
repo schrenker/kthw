@@ -6,5 +6,5 @@ containerd_url: "https://github.com/containerd/containerd/releases/download/v1.4
 containerd_pkg: "containerd-1.4.4-linux-amd64"
 cni_url: "https://github.com/containernetworking/plugins/releases/download/v0.9.1/{{ cni_pkg }}.tgz"
 cni_pkg: "cni-plugins-linux-amd64-v0.9.1"
-pod_cidr: "10.20.0.0/16"
 home: "/home/azureuser"
+...

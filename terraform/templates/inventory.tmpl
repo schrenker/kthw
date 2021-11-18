@@ -8,5 +8,5 @@ kcontroller${index} ansible_host=${ip}
 
 [KWorkers]
 %{ for index, ip in ansibleKWorkers ~}
-kworker${index} ansible_host=${ip}
+kworker${index} ansible_host=${ip} pod_cidr=10.20.${index}.0/24
 %{ endfor ~}
