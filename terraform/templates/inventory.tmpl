@@ -3,10 +3,10 @@ ${ansibleJumpbox} ansible_ssh_private_key_file=../priv.key
 
 [KControllers]
 %{ for index, ip in ansibleKControllers ~}
-KController${index} ansible_host=${ip}
+kcontroller${index} ansible_host=${ip}
 %{ endfor ~}
 
 [KWorkers]
 %{ for index, ip in ansibleKWorkers ~}
-KWorker${index} ansible_host=${ip}
+kworker${index} ansible_host=${ip}
 %{ endfor ~}
