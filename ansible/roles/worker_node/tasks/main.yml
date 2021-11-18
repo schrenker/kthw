@@ -8,18 +8,15 @@
     state: present
     update_cache: true
     cache_valid_time: 3600
-  become: true
 
 - name: Disable swap
   command: swapoff -a
-  become: true
 
 - name: Disable swap in fstab
   lineinfile:
     path: /etc/fstab
     regexp: '^([^#].*?\sswap\s+sw\s+.*)$'
     line: '# \1'
-  become: true
 
 - name: Create necessary directories
   file:
@@ -33,12 +30,11 @@
     - /etc/cni/net.d
     - /opt/cni
     - /opt/cni/bin
-    - /tmp/containerd
+    - /etc/containerd
     - /var/lib/kubelet
     - /var/lib/kube-proxy
     - /var/lib/kubernetes
     - /var/run/kubernetes
-  become: true
 
 - name: Fetch kube-binaries
   get_url:
@@ -52,7 +48,6 @@
     - "https://storage.googleapis.com/kubernetes-release/release/{{ kube_ver }}/bin/linux/amd64/kube-proxy"
     - "https://storage.googleapis.com/kubernetes-release/release/{{ kube_ver }}/bin/linux/amd64/kubelet"
     - "https://github.com/opencontainers/runc/releases/download/v1.0.0-rc93/runc.amd64"
-  become: true
 
 - name: Rename runc.amd64 to runc
   copy:
@@ -60,7 +55,6 @@
     dest: /usr/local/bin/runc
     mode: '0755'
     remote_src: true
-  become: true
 
 - name: Fetch and unarchive runtime binaries
   unarchive:
@@ -73,7 +67,6 @@
   with_items:
     - {src: "{{ cni_url }}", dest: /opt/cni/bin}
     - {src: "{{ containerd_url }}", dest: /bin}
-  become: true
 
 - name: Fetch and unarchive crictl
   unarchive:
@@ -83,7 +76,6 @@
     group: root
     remote_src: true
     mode: '0755'
-  become: true
 
 - name: Copy bridge network configration file
   template:
@@ -92,7 +84,6 @@
     owner: root
     group: root
     mode: '0700'
-  become: true
 
 - name: Copy loopback network configuration file
   copy:
@@ -101,6 +92,78 @@
     owner: root
     group: root
     mode: '0700'
-  become: true
 
+- name: Copy containerd config.toml
+  copy:
+    src: config.toml
+    dest: /etc/containerd/config.toml
+    owner: root
+    group: root
+    mode: '0700'
+
+- name: Copy containerd systemd service file
+  copy:
+    src: containerd.service
+    dest: /etc/systemd/system/containerd.service
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Copy config files and certificates to destinations
+  copy:
+    src: "{{ home }}/{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: '0700'
+    remote_src: true
+  with_items:
+    - {src: "{{ inventory_hostname }}.pem", dest: "/var/lib/kubelet"}
+    - {src: "{{ inventory_hostname }}-key.pem", dest: "/var/lib/kubelet"}
+    - {src: "{{ inventory_hostname }}.kubeconfig", dest: "/var/lib/kubelet/kubeconfig"}
+    - {src: "kube-proxy.kubeconfig", dest: "/var/lib/kube-proxy/kubeconfig"}
+    - {src: "ca.pem", dest: "/var/lib/kubernetes"}
+
+- name: Copy kubelet configuration file
+  template:
+    src: kubelet-config.yaml.j2
+    dest: /var/lib/kubelet/kubelet-config.yaml
+    owner: root
+    group: root
+    mode: '0700'
+
+- name: Copy kubelet systemd service file
+  copy:
+    src: kubelet.service
+    dest: /etc/systemd/system/kubelet.service
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Copy kube-proxy configuration file
+  template:
+    src: kube-proxy-config.yaml.j2
+    dest: /var/lib/kube-proxy/kube-proxy-config.yaml
+    owner: root
+    group: root
+    mode: '0700'
+
+- name: Copy kube-proxy systemd service file
+  copy:
+    src: kube-proxy.service
+    dest: /etc/systemd/system/kube-proxy.service
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Enable and start kubernetes worker services
+  systemd:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+    daemon_reload: true
+  with_items:
+    - containerd
+    - kubelet
+    - kube-proxy
 ...
