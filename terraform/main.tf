@@ -278,11 +278,18 @@ resource "azurerm_lb_rule" "inbound_kubectl" {
   backend_address_pool_ids       = [azurerm_lb_backend_address_pool.KController_pool.id]
 }
 
-# resource "azure_lb_probe" "healthz" {
-#   resource_group_name = azurerm_resource_group.KTHW_RG.name
-#   loadbalancer_id     = azurerm_lb.LB.id
-#   name                = "kubernetes_healthz"
-#   port                = 80
-#   protocol            = "Http"
-#   request_path        = "kubernetes.default.svc.cluster.local/healthz"
-# }
+resource "azurerm_route_table" "pod_route_table" {
+  name                = "pod_routing"
+  resource_group_name = azurerm_resource_group.KTHW_RG.name
+  location            = azurerm_resource_group.KTHW_RG.location
+}
+
+resource "azurerm_route" "pod_route" {
+  count                  = 3
+  name                   = "pod_route_${count.index}"
+  resource_group_name    = azurerm_resource_group.KTHW_RG.name
+  route_table_name       = azurerm_route_table.pod_route_table.name
+  address_prefix         = "10.20.${count.index}.0/24"
+  next_hop_type          = "VirtualAppliance"
+  next_hop_in_ip_address = "10.10.10.2${count.index}"
+}
