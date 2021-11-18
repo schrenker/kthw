@@ -1,0 +1,5 @@
+---
+- hosts: KWorkers
+  roles:
+    - worker_node
+...
