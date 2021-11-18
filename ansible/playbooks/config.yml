@@ -4,6 +4,7 @@
   roles:
     - CA
     - kubeconfig
+    - remote_kubectl
 
 - hosts: KWorkers
   tasks:

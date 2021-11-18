@@ -1,0 +1,20 @@
+---
+- name: Generate kubeconfig for remote kubectl
+  shell:
+    cmd: >
+      kubectl config set-cluster kubernetes-the-hard-way
+      --certificate-authority=ca.pem
+      --embed-certs=true
+      --server=https://{{ lb_ip }}:6443
+
+      kubectl config set-credentials azureuser
+      --client-certificate=azureuser.pem
+      --client-key=azureuser-key.pem
+
+      kubectl config set-context kubernetes-the-hard-way
+      --cluster=kubernetes-the-hard-way
+      --user=azureuser
+
+      kubectl config use-context kubernetes-the-hard-way
+    chdir: /tmp
+...
