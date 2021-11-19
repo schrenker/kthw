@@ -21,25 +21,25 @@ Having considerations in mind, provisioned infrastructure is as follows:
 [[./KTHW.png]]
 
 *** Controllers
-Ansible group: KControllers
-Addresses: 10.10.10.1X
-Virtual machine type: Standard A1_v2
-User: azureuser
+- Ansible group: KControllers
+- Addresses: 10.10.10.1X
+- Virtual machine type: Standard A1_v2
+- User: azureuser
 
 Control plane and Kubernetes controllers. Azure Load Balancer distributes traffic between these.
 
 *** Workers
-Ansible group: KWorkers
-Addresses: 10.10.10.2X, 10.20.X.0/24 (Kubenetes pod CIDR)
-Virtual machine type: Standard DS1_v2
-User: azureuser
+- Ansible group: KWorkers
+- Addresses: 10.10.10.2X, 10.20.X.0/24 (Kubenetes pod CIDR)
+- Virtual machine type: Standard DS1_v2
+- User: azureuser
 
 Kubernetes workers. Azure route table is provisioned in order to route pod addresses into correct worker nodes.
 
 *** Jumpbox
-Address: 10.10.10.100
-Virtual machine type: Standard B1s
-User: azureuser
+- Address: 10.10.10.100
+- Virtual machine type: Standard B1s
+- User: azureuser
 
 Acts as a way in for ssh (Ansible) into internal network.
 
