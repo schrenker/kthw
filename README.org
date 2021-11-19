@@ -11,13 +11,14 @@ I've encountered some limitations based on available resources - infrastructure 
 - Maximum of 6vCPU used per region
 - Maximum of 4vCPU used per Virtual Machine family
 - Very limited access to AAD (Azure Active Directory)
-- Unlike GCP, there is no way of accessing Virtual Machines without public IP address without Bastion host
+- Unlike GCP, there is no way of accessing Virtual Machines via ssh without public IP address without Bastion host
 - Obviously, there are some differences between GCP and Azure, which might reflect on project itself
 
 ** Infrastructure
 Having considerations in mind, provisioned infrastructure is as follows:
 
-[inf]
+#+ATTR_HTML: :style margin-left: auto; margin-right: auto;
+[[./KTHW.png]]
 
 ** Terraform
 Project uses flat project structure, with most of the resources defined in single file.
