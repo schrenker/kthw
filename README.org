@@ -1,0 +1,43 @@
+#+TITLE: README
+#+AUTHOR: Sebastian Zawadzki
+
+* Kubernetes the Hard Way... On Azure
+Inspired by https://github.com/kelseyhightower/kubernetes-the-hard-way
+
+Project uses Terraform to provision infrastructure on Microsoft Azure, and then bootstraps Kubenernetes cluster from scratch by Ansible. Playbooks and roles loosely follow original project by Kelsey Hightower.
+
+** Considerations
+I've encountered some limitations based on available resources - infrastructure was provisioned on Student Subscription on Azure which is limited to some extend:
+- Maximum of 6vCPU used per region
+- Maximum of 4vCPU used per Virtual Machine family
+- Very limited access to AAD (Azure Active Directory)
+- Unlike GCP, there is no way of accessing Virtual Machines without public IP address without Bastion host
+- Obviously, there are some differences between GCP and Azure, which might reflect on project itself
+
+** Infrastructure
+Having considerations in mind, provisioned infrastructure is as follows:
+
+[inf]
+
+** Terraform
+Project uses flat project structure, with most of the resources defined in single file.
+
+*** Authentication
+Considering limited access to AAD on Student Subscription, project uses basic ~az login~ authentication method. Switching to other methods, like Service Principal should require no changes to the project itself.
+
+*** Generated files
+Upon running, Terraform generates couple of files for Ansible to use:
+- ansible/ssh.cfg
+- ansible/inventory
+- ansible/group_vars/all.yml
+
+These files contain IP addresses which are known only after infrastructure is provisioned, so it's logicall for Terraform to generate these files, especially since templating capabilities of Terraform are really good.
+
+** Ansible
+Almost all of the Ansible code is idempotent - there are some shell tasks, that are idempotent, but making them report OK instead of Changed is challenging in context they are used in. Running same tasks twice should not generate any side effects.
+
+*** Roles
+Most of Ansible code is split into roles. They loosely follow the order in which original KTHW project follows - while they are split into respective functions, it is not as strict as usual Ansible roles should be formatted.
+
+*** Playbooks
+Playbooks are split into whatever I was doing at the moment. The only one that should be used to fully bootstrap cluster is all.yml, which runs all tasks in correct order.
