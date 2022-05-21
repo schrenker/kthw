@@ -52,6 +52,20 @@ resource "azurerm_subnet_network_security_group_association" "nsg_worker_subnet"
   network_security_group_id = azurerm_network_security_group.nsg_worker.id
 }
 
+resource "azurerm_network_security_rule" "nsg_rule_allow_pods_to_control" {
+  name                         = "allow_control_to_pods"
+  priority                     = 1000
+  direction                    = "Inbound"
+  access                       = "Allow"
+  protocol                     = "*"
+  source_port_range            = "*"
+  destination_port_range       = "*"
+  source_address_prefixes      = ["10.20.0.0/16"]
+  destination_address_prefixes = ["10.10.10.0/24"]
+  resource_group_name          = azurerm_resource_group.kthw_rg.name
+  network_security_group_name  = azurerm_network_security_group.nsg_control.name
+}
+
 resource "azurerm_route_table" "pod_route_table" {
   name                = "pod_routing"
   resource_group_name = azurerm_resource_group.kthw_rg.name
@@ -78,19 +92,6 @@ resource "azurerm_subnet_route_table_association" "control_subnet_route" {
   route_table_id = azurerm_route_table.pod_route_table.id
 }
 
-# resource "azurerm_network_security_rule" "KTHW_NSG_Internal" {
-#   name                         = "Internal"
-#   priority                     = 100
-#   direction                    = "Inbound"
-#   access                       = "Allow"
-#   protocol                     = "*"
-#   source_port_range            = "*"
-#   destination_port_range       = "*"
-#   source_address_prefixes      = ["10.10.10.0/24", "10.20.0.0/16"]
-#   destination_address_prefixes = ["10.10.10.0/24", "10.20.0.0/16"]
-#   resource_group_name          = azurerm_resource_group.KTHW_RG.name
-#   network_security_group_name  = azurerm_network_security_group.KTHW_NSG.name
-# }
 
 # resource "azurerm_network_security_rule" "KTHW_NSG_External" {
 #   name                        = "External"
