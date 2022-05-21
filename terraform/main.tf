@@ -67,7 +67,7 @@ resource "azurerm_route_table" "kthw_pod_route_table" {
 }
 
 resource "azurerm_route" "pod_route" {
-  count                  = 3
+  count                  = var.num_worker
   name                   = "pod_route_${count.index}"
   resource_group_name    = azurerm_resource_group.kthw_rg.name
   route_table_name       = azurerm_route_table.kthw_pod_route_table.name
@@ -86,8 +86,8 @@ resource "azurerm_subnet_route_table_association" "control_subnet_route" {
   route_table_id = azurerm_route_table.kthw_pod_route_table.id
 }
 
-resource "azurerm_availability_set" "kthw_control_AS" {
-  name                = "kthw_control_AS"
+resource "azurerm_availability_set" "kthw_control_as" {
+  name                = "kthw_control_as"
   resource_group_name = azurerm_resource_group.kthw_rg.name
   location            = azurerm_resource_group.kthw_rg.location
 }

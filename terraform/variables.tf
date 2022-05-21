@@ -1,14 +1,14 @@
 variable "controller_name" {
   description = "Name for kubernetes controller nodes"
   type        = string
-  default     = "kcontroller"
+  default     = "controller"
 }
 
 
 variable "worker_name" {
   description = "Name for kubernetes worker nodes"
   type        = string
-  default     = "kworker"
+  default     = "worker"
 }
 
 variable "controller_vm" {
@@ -27,4 +27,16 @@ variable "admin_username" {
   description = "Name for an admin user, available over SSH"
   type        = string
   default     = "azureuser"
+}
+
+variable "num_control" {
+  description = "Number of control nodes to be spawned"
+  type        = number
+  default     = 3
+}
+
+variable "num_worker" {
+  description = "Number of control nodes to be spawned"
+  type        = number
+  default     = 2
 }
