@@ -52,6 +52,32 @@ resource "azurerm_subnet_network_security_group_association" "nsg_worker_subnet"
   network_security_group_id = azurerm_network_security_group.nsg_worker.id
 }
 
+resource "azurerm_route_table" "pod_route_table" {
+  name                = "pod_routing"
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+  location            = azurerm_resource_group.kthw_rg.location
+}
+
+resource "azurerm_route" "pod_route" {
+  count                  = 3
+  name                   = "pod_route_${count.index}"
+  resource_group_name    = azurerm_resource_group.kthw_rg.name
+  route_table_name       = azurerm_route_table.pod_route_table.name
+  address_prefix         = "10.20.${count.index}.0/24"
+  next_hop_type          = "VirtualAppliance"
+  next_hop_in_ip_address = "10.10.20.1${count.index}"
+}
+
+resource "azurerm_subnet_route_table_association" "worker_subnet_route" {
+  subnet_id      = azurerm_subnet.kthw_worker.id
+  route_table_id = azurerm_route_table.pod_route_table.id
+}
+
+resource "azurerm_subnet_route_table_association" "control_subnet_route" {
+  subnet_id      = azurerm_subnet.kthw_control.id
+  route_table_id = azurerm_route_table.pod_route_table.id
+}
+
 # resource "azurerm_network_security_rule" "KTHW_NSG_Internal" {
 #   name                         = "Internal"
 #   priority                     = 100
@@ -296,18 +322,3 @@ resource "azurerm_subnet_network_security_group_association" "nsg_worker_subnet"
 #   backend_address_pool_ids       = [azurerm_lb_backend_address_pool.KController_pool.id]
 # }
 
-# resource "azurerm_route_table" "pod_route_table" {
-#   name                = "pod_routing"
-#   resource_group_name = azurerm_resource_group.KTHW_RG.name
-#   location            = azurerm_resource_group.KTHW_RG.location
-# }
-
-# resource "azurerm_route" "pod_route" {
-#   count                  = 3
-#   name                   = "pod_route_${count.index}"
-#   resource_group_name    = azurerm_resource_group.KTHW_RG.name
-#   route_table_name       = azurerm_route_table.pod_route_table.name
-#   address_prefix         = "10.20.${count.index}.0/24"
-#   next_hop_type          = "VirtualAppliance"
-#   next_hop_in_ip_address = "10.10.10.2${count.index}"
-# }
