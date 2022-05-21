@@ -12,6 +12,7 @@ resource "local_file" "sshcfg" {
   content = templatefile("./templates/sshcfg.tmpl",
     {
       ansibleJumpbox = azurerm_linux_virtual_machine.Jumpbox.public_ip_address
+      adminUsername  = var.admin_username
   })
   filename = "../ansible/ssh.cfg"
 }

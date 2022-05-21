@@ -1,10 +1,10 @@
 Host 10.10.10.*
-     ProxyCommand ssh -W %h:%p azureuser@${ansibleJumpbox}
+     ProxyCommand ssh -W %h:%p ${adminUsername}@${ansibleJumpbox}
      IdentityFile ../priv.key
 
 Host ${ansibleJumpbox}
      Hostname ${ansibleJumpbox}
-     User azureuser
+     User ${adminUsername}
      IdentityFile ../priv.key
      ControlMaster auto
      ControlPath ansible-%r@%h:%p
