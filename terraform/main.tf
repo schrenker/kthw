@@ -103,7 +103,7 @@ resource "azurerm_linux_virtual_machine" "Jumpbox" {
   resource_group_name = azurerm_resource_group.KTHW_RG.name
   location            = azurerm_resource_group.KTHW_RG.location
   size                = "Standard_B1s"
-  admin_username      = "azureuser"
+  admin_username      = var.admin_username
   network_interface_ids = [
     azurerm_network_interface.Jumpbox_NIC.id
   ]
@@ -151,14 +151,14 @@ resource "azurerm_linux_virtual_machine" "KController" {
   name                = "${var.controller_name}${count.index}"
   resource_group_name = azurerm_resource_group.KTHW_RG.name
   location            = azurerm_resource_group.KTHW_RG.location
-  size                = "Standard_A1_v2"
-  admin_username      = "azureuser"
+  size                = var.controller_name
+  admin_username      = var.admin_username
   network_interface_ids = [
     azurerm_network_interface.KController_NIC[count.index].id
   ]
 
   admin_ssh_key {
-    username   = "azureuser"
+    username   = var.admin_username
     public_key = file("../pub.key")
   }
 
@@ -201,8 +201,8 @@ resource "azurerm_linux_virtual_machine" "KWorker" {
   name                = "${var.worker_name}${count.index}"
   resource_group_name = azurerm_resource_group.KTHW_RG.name
   location            = azurerm_resource_group.KTHW_RG.location
-  size                = "Standard_DS1_v2"
-  admin_username      = "azureuser"
+  size                = var.worker_vm
+  admin_username      = var.admin_username
   network_interface_ids = [
     azurerm_network_interface.KWorker_NIC[count.index].id
   ]

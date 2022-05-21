@@ -10,3 +10,21 @@ variable "worker_name" {
   type        = string
   default     = "kworker"
 }
+
+variable "controller_vm" {
+  description = "SKU for controller VMs"
+  type        = string
+  default     = "Standard_A1_v2"
+}
+
+variable "worker_vm" {
+  description = "SKU for controller VMs"
+  type        = string
+  default     = "Standard_DS1_v2"
+}
+
+variable "admin_username" {
+  description = "Name for an admin user, available over SSH"
+  type        = string
+  default     = "azureuser"
+}
