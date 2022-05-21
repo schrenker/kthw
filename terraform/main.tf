@@ -1,8 +1,10 @@
+# Governance
 resource "azurerm_resource_group" "kthw_rg" {
   name     = "kthw_rg"
   location = "North Europe"
 }
 
+# networking
 resource "azurerm_virtual_network" "kthw_vnet" {
   name                = "kthw_vnet"
   location            = azurerm_resource_group.kthw_rg.location
@@ -10,44 +12,71 @@ resource "azurerm_virtual_network" "kthw_vnet" {
   address_space       = ["10.10.0.0/16"]
 }
 
-resource "azurerm_subnet" "kthw_control" {
-  name                 = "kthw_control"
+resource "azurerm_subnet" "kthw_controller_subnet" {
+  name                 = "kthw_controller_subnet"
   resource_group_name  = azurerm_resource_group.kthw_rg.name
   virtual_network_name = azurerm_virtual_network.kthw_vnet.name
   address_prefixes     = ["10.10.10.0/24"]
 }
 
-resource "azurerm_subnet" "kthw_worker" {
-  name                 = "kthw_worker"
+resource "azurerm_subnet" "kthw_worker_subnet" {
+  name                 = "kthw_worker_subnet"
   resource_group_name  = azurerm_resource_group.kthw_rg.name
   virtual_network_name = azurerm_virtual_network.kthw_vnet.name
   address_prefixes     = ["10.10.20.0/24"]
 }
 
-resource "azurerm_network_security_group" "kthw_nsg_control" {
-  name                = "kthw_nsg_control"
+resource "azurerm_route_table" "kthw_route_table_pods" {
+  name                = "kthw_route_table_pods"
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+  location            = azurerm_resource_group.kthw_rg.location
+}
+
+resource "azurerm_route" "pod_route" {
+  count                  = var.num_worker
+  name                   = "pod_route_${count.index}"
+  resource_group_name    = azurerm_resource_group.kthw_rg.name
+  route_table_name       = azurerm_route_table.kthw_route_table_pods.name
+  address_prefix         = "10.20.${count.index}.0/24"
+  next_hop_type          = "VirtualAppliance"
+  next_hop_in_ip_address = "10.10.20.1${count.index}"
+}
+
+resource "azurerm_subnet_route_table_association" "control_subnet_route_assoc" {
+  subnet_id      = azurerm_subnet.kthw_controller_subnet.id
+  route_table_id = azurerm_route_table.kthw_route_table_pods.id
+}
+
+resource "azurerm_subnet_route_table_association" "worker_subnet_route_assoc" {
+  subnet_id      = azurerm_subnet.kthw_worker.id
+  route_table_id = azurerm_route_table.kthw_route_table_pods.id
+}
+
+# communication flow
+resource "azurerm_network_security_group" "kthw_controller_nsg" {
+  name                = "kthw_controller_nsg"
   location            = azurerm_resource_group.kthw_rg.location
   resource_group_name = azurerm_resource_group.kthw_rg.name
 }
 
-resource "azurerm_network_security_group" "kthw_nsg_worker" {
-  name                = "kthw_nsg_worker"
+resource "azurerm_network_security_group" "kthw_worker_nsg" {
+  name                = "kthw_worker_nsg"
   location            = azurerm_resource_group.kthw_rg.location
   resource_group_name = azurerm_resource_group.kthw_rg.name
 }
 
-resource "azurerm_subnet_network_security_group_association" "nsg_control_subnet" {
-  subnet_id                 = azurerm_subnet.kthw_control.id
-  network_security_group_id = azurerm_network_security_group.kthw_nsg_control.id
+resource "azurerm_subnet_network_security_group_association" "nsg_controller_subnet_assoc" {
+  subnet_id                 = azurerm_subnet.kthw_control_subnet.id
+  network_security_group_id = azurerm_network_security_group.kthw_controller_nsg.id
 }
 
-resource "azurerm_subnet_network_security_group_association" "nsg_worker_subnet" {
-  subnet_id                 = azurerm_subnet.kthw_worker.id
-  network_security_group_id = azurerm_network_security_group.kthw_nsg_worker.id
+resource "azurerm_subnet_network_security_group_association" "nsg_worker_subnet_assoc" {
+  subnet_id                 = azurerm_subnet.kthw_worker_subnet.id
+  network_security_group_id = azurerm_network_security_group.kthw_worker_nsg.id
 }
 
-resource "azurerm_network_security_rule" "nsg_rule_allow_pods_to_control" {
-  name                         = "allow_control_to_pods"
+resource "azurerm_network_security_rule" "nsg_rule_allow_pods_to_controllers" {
+  name                         = "allow_pods_to_controllers"
   priority                     = 1000
   direction                    = "Inbound"
   access                       = "Allow"
@@ -57,37 +86,12 @@ resource "azurerm_network_security_rule" "nsg_rule_allow_pods_to_control" {
   source_address_prefixes      = ["10.20.0.0/16"]
   destination_address_prefixes = ["10.10.10.0/24"]
   resource_group_name          = azurerm_resource_group.kthw_rg.name
-  network_security_group_name  = azurerm_network_security_group.kthw_nsg_control.name
+  network_security_group_name  = azurerm_network_security_group.kthw_control_nsg.name
 }
 
-resource "azurerm_route_table" "kthw_pod_route_table" {
-  name                = "kthw_pod_route_table"
-  resource_group_name = azurerm_resource_group.kthw_rg.name
-  location            = azurerm_resource_group.kthw_rg.location
-}
-
-resource "azurerm_route" "pod_route" {
-  count                  = var.num_worker
-  name                   = "pod_route_${count.index}"
-  resource_group_name    = azurerm_resource_group.kthw_rg.name
-  route_table_name       = azurerm_route_table.kthw_pod_route_table.name
-  address_prefix         = "10.20.${count.index}.0/24"
-  next_hop_type          = "VirtualAppliance"
-  next_hop_in_ip_address = "10.10.20.1${count.index}"
-}
-
-resource "azurerm_subnet_route_table_association" "worker_subnet_route" {
-  subnet_id      = azurerm_subnet.kthw_worker.id
-  route_table_id = azurerm_route_table.kthw_pod_route_table.id
-}
-
-resource "azurerm_subnet_route_table_association" "control_subnet_route" {
-  subnet_id      = azurerm_subnet.kthw_control.id
-  route_table_id = azurerm_route_table.kthw_pod_route_table.id
-}
-
-resource "azurerm_availability_set" "kthw_control_as" {
-  name                = "kthw_control_as"
+# compute
+resource "azurerm_availability_set" "kthw_controller_as" {
+  name                = "kthw_controller_as"
   resource_group_name = azurerm_resource_group.kthw_rg.name
   location            = azurerm_resource_group.kthw_rg.location
 }
@@ -96,6 +100,98 @@ resource "azurerm_availability_set" "kthw_worker_as" {
   name                = "kthw_worker_as"
   resource_group_name = azurerm_resource_group.kthw_rg.name
   location            = azurerm_resource_group.kthw_rg.location
+}
+
+resource "azurerm_network_interface" "kthw_controller_nic" {
+  count               = var.num_controllers
+  name                = "${var.controller_name}${count.index}"
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+  location            = azurerm_resource_group.kthw_rg.location
+  # enable_ip_forwarding = true
+
+  ip_configuration {
+    name                          = "internal"
+    subnet_id                     = azurerm_subnet.kthw_controller_subnet.id
+    private_ip_address_allocation = "Static"
+    private_ip_address            = "10.10.10.1${count.index}"
+  }
+}
+
+resource "azurerm_linux_virtual_machine" "kthw_controller" {
+  count               = var.num_controllers
+  name                = "${var.controller_name}${count.index}"
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+  location            = azurerm_resource_group.kthw_rg.location
+  size                = var.controller_vm
+  admin_username      = var.admin_username
+  network_interface_ids = [
+    azurerm_network_interface.kthw_controller_nic[count.index].id
+  ]
+  availability_set_id = azurerm_availability_set.kthw_controller_as.id
+
+  admin_ssh_key {
+    username   = var.admin_username
+    public_key = file("../pub.key")
+  }
+
+  os_disk {
+    caching              = "None"
+    storage_account_type = "Standard_LRS"
+    disk_size_gb         = 50
+  }
+
+  source_image_reference {
+    publisher = "Canonical"
+    offer     = "UbuntuServer"
+    sku       = "18.04-LTS"
+    version   = "latest"
+  }
+}
+
+resource "azurerm_network_interface" "kthw_worker_nic" {
+  count                = var.num_workers
+  name                 = "${var.worker_name}${count.index}"
+  resource_group_name  = azurerm_resource_group.KTHW_RG.name
+  location             = azurerm_resource_group.KTHW_RG.location
+  enable_ip_forwarding = true
+
+  ip_configuration {
+    name                          = "internal"
+    subnet_id                     = azurerm_subnet.kthw_worker_subnet.id
+    private_ip_address_allocation = "Static"
+    private_ip_address            = "10.10.20.1${count.index}"
+  }
+}
+
+resource "azurerm_linux_virtual_machine" "kthw_worker" {
+  count               = var.num_workers
+  name                = "${var.worker_name}${count.index}"
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+  location            = azurerm_resource_group.kthw_rg.location
+  size                = var.worker_vm
+  admin_username      = var.admin_username
+  network_interface_ids = [
+    azurerm_network_interface.KWorker_NIC[count.index].id
+  ]
+  availability_set_id = azurerm_availability_set.kthw_worker_as.id
+
+  admin_ssh_key {
+    username   = var.admin_username
+    public_key = file("../pub.key")
+  }
+
+  os_disk {
+    caching              = "None"
+    storage_account_type = "Standard_LRS"
+    disk_size_gb         = 50
+  }
+
+  source_image_reference {
+    publisher = "Canonical"
+    offer     = "UbuntuServer"
+    sku       = "18.04-LTS"
+    version   = "latest"
+  }
 }
 
 # resource "azurerm_network_security_rule" "KTHW_NSG_External" {
@@ -181,105 +277,7 @@ resource "azurerm_availability_set" "kthw_worker_as" {
 #   }
 # }
 
-# resource "azurerm_network_interface" "KController_NIC" {
-#   count                = 2
-#   name                 = "${var.controller_name}_${count.index}"
-#   resource_group_name  = azurerm_resource_group.KTHW_RG.name
-#   location             = azurerm_resource_group.KTHW_RG.location
-#   enable_ip_forwarding = true
 
-#   ip_configuration {
-#     name                          = "internal"
-#     subnet_id                     = azurerm_subnet.KTHW_Subnet1.id
-#     private_ip_address_allocation = "Static"
-#     private_ip_address            = "10.10.10.1${count.index}"
-#   }
-# }
-
-# resource "azurerm_linux_virtual_machine" "KController" {
-#   count               = 2
-#   name                = "${var.controller_name}${count.index}"
-#   resource_group_name = azurerm_resource_group.KTHW_RG.name
-#   location            = azurerm_resource_group.KTHW_RG.location
-#   size                = var.controller_name
-#   admin_username      = var.admin_username
-#   network_interface_ids = [
-#     azurerm_network_interface.KController_NIC[count.index].id
-#   ]
-
-#   admin_ssh_key {
-#     username   = var.admin_username
-#     public_key = file("../pub.key")
-#   }
-
-#   os_disk {
-#     caching              = "None"
-#     storage_account_type = "Standard_LRS"
-#     disk_size_gb         = 50
-#   }
-
-#   source_image_reference {
-#     publisher = "Canonical"
-#     offer     = "UbuntuServer"
-#     sku       = "18.04-LTS"
-#     version   = "latest"
-#   }
-
-#   tags = {
-#     "env"  = "kthw"
-#     "type" = "controller"
-#   }
-# }
-
-# resource "azurerm_network_interface" "KWorker_NIC" {
-#   count                = 3
-#   name                 = "${var.worker_name}_${count.index}"
-#   resource_group_name  = azurerm_resource_group.KTHW_RG.name
-#   location             = azurerm_resource_group.KTHW_RG.location
-#   enable_ip_forwarding = true
-
-#   ip_configuration {
-#     name                          = "internal"
-#     subnet_id                     = azurerm_subnet.KTHW_Subnet1.id
-#     private_ip_address_allocation = "Static"
-#     private_ip_address            = "10.10.10.2${count.index}"
-#   }
-# }
-
-# resource "azurerm_linux_virtual_machine" "KWorker" {
-#   count               = 3
-#   name                = "${var.worker_name}${count.index}"
-#   resource_group_name = azurerm_resource_group.KTHW_RG.name
-#   location            = azurerm_resource_group.KTHW_RG.location
-#   size                = var.worker_vm
-#   admin_username      = var.admin_username
-#   network_interface_ids = [
-#     azurerm_network_interface.KWorker_NIC[count.index].id
-#   ]
-
-#   admin_ssh_key {
-#     username   = "azureuser"
-#     public_key = file("../pub.key")
-#   }
-
-#   os_disk {
-#     caching              = "None"
-#     storage_account_type = "Standard_LRS"
-#     disk_size_gb         = 50
-#   }
-
-#   source_image_reference {
-#     publisher = "Canonical"
-#     offer     = "UbuntuServer"
-#     sku       = "18.04-LTS"
-#     version   = "latest"
-#   }
-
-#   tags = {
-#     "env"  = "kthw"
-#     "type" = "worker"
-#   }
-# }
 
 # resource "azurerm_public_ip" "KTHW_LB_IP" {
 #   name                = "KTHW_LB_IP"
