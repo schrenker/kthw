@@ -171,7 +171,7 @@ resource "azurerm_linux_virtual_machine" "kthw_worker" {
   size                = var.worker_vm
   admin_username      = var.admin_username
   network_interface_ids = [
-    azurerm_network_interface.KWorker_NIC[count.index].id
+    azurerm_network_interface.kthw_worker_nic[count.index].id
   ]
   availability_set_id = azurerm_availability_set.kthw_worker_as.id
 
