@@ -1,15 +1,22 @@
-# Governance
+# 0 - Governance
 resource "azurerm_resource_group" "kthw_rg" {
   name     = "kthw_rg"
   location = "North Europe"
 }
 
-# networking
+# 1 - Networking
 resource "azurerm_virtual_network" "kthw_vnet" {
   name                = "kthw_vnet"
-  location            = azurerm_resource_group.kthw_rg.location
   resource_group_name = azurerm_resource_group.kthw_rg.name
+  location            = azurerm_resource_group.kthw_rg.location
   address_space       = ["10.10.0.0/16"]
+}
+
+resource "azurerm_subnet" "kthw_bastion_subnet" {
+  name                 = "AzureBastionSubnet"
+  resource_group_name  = azurerm_resource_group.kthw_rg.name
+  virtual_network_name = azurerm_virtual_network.kthw_vnet.name
+  address_prefix       = ["10.10.0.0/24"]
 }
 
 resource "azurerm_subnet" "kthw_controller_subnet" {
@@ -24,6 +31,28 @@ resource "azurerm_subnet" "kthw_worker_subnet" {
   resource_group_name  = azurerm_resource_group.kthw_rg.name
   virtual_network_name = azurerm_virtual_network.kthw_vnet.name
   address_prefixes     = ["10.10.20.0/24"]
+}
+
+resource "azurerm_public_ip" "kthw_bastion_public_ip" {
+  name                = "kthw_bastion_public_ip"
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+  location            = azurerm_resource_group.kthw_rg.location
+  allocation_method   = "Static"
+  sku                 = "Standard"
+}
+
+resource "azurerm_bastion_host" "kthw_bastion" {
+  name                = "kthw_bastion"
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+  location            = azurerm_resource_group.kthw_rg.location
+  sku                 = "standard"
+  tunneling_enabled   = true
+
+  ip_configuration {
+    name                 = "configuration"
+    subnet_id            = azurerm_subnet.kthw_bastion_subnet.id
+    public_ip_address_id = azurerm_public_ip.kthw_bastion_public_ip.id
+  }
 }
 
 resource "azurerm_route_table" "kthw_route_table_pods" {
@@ -52,7 +81,7 @@ resource "azurerm_subnet_route_table_association" "worker_subnet_route_assoc" {
   route_table_id = azurerm_route_table.kthw_route_table_pods.id
 }
 
-# communication flow
+# 2 - Communication Flow
 resource "azurerm_network_security_group" "kthw_controller_nsg" {
   name                = "kthw_controller_nsg"
   location            = azurerm_resource_group.kthw_rg.location
@@ -89,7 +118,7 @@ resource "azurerm_network_security_rule" "nsg_rule_allow_pods_to_controllers" {
   network_security_group_name  = azurerm_network_security_group.kthw_control_nsg.name
 }
 
-# compute
+# 3 - Compute
 resource "azurerm_availability_set" "kthw_controller_as" {
   name                = "kthw_controller_as"
   resource_group_name = azurerm_resource_group.kthw_rg.name
