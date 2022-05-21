@@ -1,9 +1,6 @@
 resource "azurerm_resource_group" "kthw_rg" {
   name     = "kthw_rg"
   location = "North Europe"
-  tags = {
-    "env" = "kthw"
-  }
 }
 
 resource "azurerm_virtual_network" "kthw_vnet" {
@@ -11,9 +8,6 @@ resource "azurerm_virtual_network" "kthw_vnet" {
   location            = azurerm_resource_group.kthw_rg.location
   resource_group_name = azurerm_resource_group.kthw_rg.name
   address_space       = ["10.10.0.0/16"]
-  tags = {
-    "env" = "kthw"
-  }
 }
 
 resource "azurerm_subnet" "kthw_control" {
@@ -30,26 +24,26 @@ resource "azurerm_subnet" "kthw_worker" {
   address_prefixes     = ["10.10.20.0/24"]
 }
 
-resource "azurerm_network_security_group" "nsg_control" {
-  name                = "nsg_control"
+resource "azurerm_network_security_group" "kthw_nsg_control" {
+  name                = "kthw_nsg_control"
   location            = azurerm_resource_group.kthw_rg.location
   resource_group_name = azurerm_resource_group.kthw_rg.name
 }
 
-resource "azurerm_network_security_group" "nsg_worker" {
-  name                = "nsg_worker"
+resource "azurerm_network_security_group" "kthw_nsg_worker" {
+  name                = "kthw_nsg_worker"
   location            = azurerm_resource_group.kthw_rg.location
   resource_group_name = azurerm_resource_group.kthw_rg.name
 }
 
 resource "azurerm_subnet_network_security_group_association" "nsg_control_subnet" {
   subnet_id                 = azurerm_subnet.kthw_control.id
-  network_security_group_id = azurerm_network_security_group.nsg_control.id
+  network_security_group_id = azurerm_network_security_group.kthw_nsg_control.id
 }
 
 resource "azurerm_subnet_network_security_group_association" "nsg_worker_subnet" {
   subnet_id                 = azurerm_subnet.kthw_worker.id
-  network_security_group_id = azurerm_network_security_group.nsg_worker.id
+  network_security_group_id = azurerm_network_security_group.kthw_nsg_worker.id
 }
 
 resource "azurerm_network_security_rule" "nsg_rule_allow_pods_to_control" {
@@ -63,11 +57,11 @@ resource "azurerm_network_security_rule" "nsg_rule_allow_pods_to_control" {
   source_address_prefixes      = ["10.20.0.0/16"]
   destination_address_prefixes = ["10.10.10.0/24"]
   resource_group_name          = azurerm_resource_group.kthw_rg.name
-  network_security_group_name  = azurerm_network_security_group.nsg_control.name
+  network_security_group_name  = azurerm_network_security_group.kthw_nsg_control.name
 }
 
-resource "azurerm_route_table" "pod_route_table" {
-  name                = "pod_routing"
+resource "azurerm_route_table" "kthw_pod_route_table" {
+  name                = "kthw_pod_route_table"
   resource_group_name = azurerm_resource_group.kthw_rg.name
   location            = azurerm_resource_group.kthw_rg.location
 }
@@ -76,7 +70,7 @@ resource "azurerm_route" "pod_route" {
   count                  = 3
   name                   = "pod_route_${count.index}"
   resource_group_name    = azurerm_resource_group.kthw_rg.name
-  route_table_name       = azurerm_route_table.pod_route_table.name
+  route_table_name       = azurerm_route_table.kthw_pod_route_table.name
   address_prefix         = "10.20.${count.index}.0/24"
   next_hop_type          = "VirtualAppliance"
   next_hop_in_ip_address = "10.10.20.1${count.index}"
@@ -84,14 +78,25 @@ resource "azurerm_route" "pod_route" {
 
 resource "azurerm_subnet_route_table_association" "worker_subnet_route" {
   subnet_id      = azurerm_subnet.kthw_worker.id
-  route_table_id = azurerm_route_table.pod_route_table.id
+  route_table_id = azurerm_route_table.kthw_pod_route_table.id
 }
 
 resource "azurerm_subnet_route_table_association" "control_subnet_route" {
   subnet_id      = azurerm_subnet.kthw_control.id
-  route_table_id = azurerm_route_table.pod_route_table.id
+  route_table_id = azurerm_route_table.kthw_pod_route_table.id
 }
 
+resource "azurerm_availability_set" "kthw_control_AS" {
+  name                = "kthw_control_AS"
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+  location            = azurerm_resource_group.kthw_rg.location
+}
+
+resource "azurerm_availability_set" "kthw_worker_as" {
+  name                = "kthw_worker_as"
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+  location            = azurerm_resource_group.kthw_rg.location
+}
 
 # resource "azurerm_network_security_rule" "KTHW_NSG_External" {
 #   name                        = "External"
