@@ -35,6 +35,12 @@ variable "num_workers" {
   default     = 2
 }
 
+variable "bastion_vm" {
+  description = "SKU for bastion host"
+  type        = string
+  default     = "Standard_B1s"
+}
+
 variable "admin_username" {
   description = "Name for an admin user, available over SSH"
   type        = string
