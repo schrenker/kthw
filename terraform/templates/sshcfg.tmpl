@@ -1,10 +1,10 @@
-Host 10.10.10.*
-     ProxyCommand ssh -W %h:%p ${adminUsername}@${ansibleJumpbox}
+Host 10.10.*.*
+     ProxyCommand ssh -W %h:%p ${admin_username}@${bastion}
      IdentityFile ../priv.key
 
-Host ${ansibleJumpbox}
-     Hostname ${ansibleJumpbox}
-     User ${adminUsername}
+Host ${bastion}
+     Hostname ${bastion}
+     User ${admin_username}
      IdentityFile ../priv.key
      ControlMaster auto
      ControlPath ansible-%r@%h:%p
