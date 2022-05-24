@@ -39,6 +39,14 @@ resource "azurerm_public_ip" "kthw_bastion_public_ip" {
   sku                 = "Standard"
 }
 
+resource "azurerm_public_ip" "kthw_loadbalancer_public_ip" {
+  name                = "kthw_loadbalancer_public_ip"
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+  location            = azurerm_resource_group.kthw_rg.location
+  allocation_method   = "Static"
+  sku                 = "Standard"
+}
+
 resource "azurerm_route_table" "kthw_route_table_pods" {
   name                = "kthw_route_table_pods"
   resource_group_name = azurerm_resource_group.kthw_rg.name
@@ -246,7 +254,7 @@ resource "azurerm_linux_virtual_machine" "kthw_worker" {
 }
 
 resource "azurerm_linux_virtual_machine" "kthw_bastion" {
-  name                = "kthw_bastion"
+  name                = "kthwbastion"
   resource_group_name = azurerm_resource_group.kthw_rg.name
   location            = azurerm_resource_group.kthw_rg.location
   size                = var.bastion_vm
@@ -282,7 +290,7 @@ resource "azurerm_lb" "kthw_controller_loadbalancer" {
   frontend_ip_configuration {
     name                          = "controller_loadbalancer_frontend"
     subnet_id                     = azurerm_subnet.kthw_controller_subnet.id
-    private_ip_address            = "10.10.0.4"
+    private_ip_address            = "10.10.10.4"
     private_ip_address_allocation = "Static"
   }
 }
@@ -319,79 +327,46 @@ resource "azurerm_lb_rule" "controller_loadbalancer_rule" {
   probe_id                       = azurerm_lb_probe.controller_loadbalancer_probe.id
 }
 
+resource "azurerm_lb" "kthw_worker_loadbalancer" {
+  name                = "kthw_worker_loadbalancer"
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+  location            = azurerm_resource_group.kthw_rg.location
+  sku                 = "Standard"
 
-# resource "azurerm_network_security_rule" "KTHW_NSG_External" {
-#   name                        = "External"
-#   priority                    = 101
-#   direction                   = "Inbound"
-#   access                      = "Allow"
-#   protocol                    = "Tcp"
-#   source_port_range           = "*"
-#   destination_port_ranges     = ["22", "6443"]
-#   source_address_prefix       = "*"
-#   destination_address_prefix  = "*"
-#   resource_group_name         = azurerm_resource_group.KTHW_RG.name
-#   network_security_group_name = azurerm_network_security_group.KTHW_NSG.name
-# }
+  frontend_ip_configuration {
+    name                 = "worker_loadbalancer_frontend"
+    public_ip_address_id = azurerm_public_ip.kthw_loadbalancer_public_ip.id
+  }
+}
 
-# resource "azurerm_network_security_rule" "KTHW_NSG_External_ICMP" {
-#   name                        = "External_ICMP"
-#   priority                    = 102
-#   direction                   = "Inbound"
-#   access                      = "Allow"
-#   protocol                    = "Icmp"
-#   source_port_range           = "*"
-#   destination_port_range      = "*"
-#   source_address_prefix       = "*"
-#   destination_address_prefix  = "*"
-#   resource_group_name         = azurerm_resource_group.KTHW_RG.name
-#   network_security_group_name = azurerm_network_security_group.KTHW_NSG.name
-# }
+resource "azurerm_lb_backend_address_pool" "worker_backend_pool" {
+  loadbalancer_id = azurerm_lb.kthw_worker_loadbalancer.id
+  name            = "worker_backend_pool"
+}
 
-# resource "azurerm_public_ip" "KTHW_LB_IP" {
-#   name                = "KTHW_LB_IP"
-#   resource_group_name = azurerm_resource_group.KTHW_RG.name
-#   location            = azurerm_resource_group.KTHW_RG.location
-#   allocation_method   = "Static"
-#   sku                 = "Standard"
-# }
+resource "azurerm_network_interface_backend_address_pool_association" "worker_backend_pool_addresses" {
+  count                   = var.num_workers
+  backend_address_pool_id = azurerm_lb_backend_address_pool.worker_backend_pool.id
+  network_interface_id    = azurerm_network_interface.kthw_worker_nic[count.index].id
+  ip_configuration_name   = "internal"
+}
 
-# resource "azurerm_lb" "LB" {
-#   name                = "LB"
-#   resource_group_name = azurerm_resource_group.KTHW_RG.name
-#   location            = azurerm_resource_group.KTHW_RG.location
-#   sku                 = "Standard"
-#   sku_tier            = "Regional"
+resource "azurerm_lb_probe" "worker_loadbalancer_probe" {
+  name                = "worker_health_probe"
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+  loadbalancer_id     = azurerm_lb.kthw_worker_loadbalancer.id
+  protocol            = "Tcp"
+  port                = 33443
+}
 
-#   frontend_ip_configuration {
-#     name                 = "PublicIP"
-#     public_ip_address_id = azurerm_public_ip.KTHW_LB_IP.id
-#     availability_zone    = "No-Zone"
-#   }
-
-# }
-
-# resource "azurerm_lb_backend_address_pool" "KController_pool" {
-#   loadbalancer_id = azurerm_lb.LB.id
-#   name            = "KController_pool"
-# }
-
-# resource "azurerm_lb_backend_address_pool_address" "KController_address" {
-#   count                   = 2
-#   name                    = "KController${count.index}"
-#   backend_address_pool_id = azurerm_lb_backend_address_pool.KController_pool.id
-#   virtual_network_id      = azurerm_virtual_network.KTHW_VNet.id
-#   ip_address              = "10.10.10.1${count.index}"
-# }
-
-# resource "azurerm_lb_rule" "inbound_kubectl" {
-#   resource_group_name            = azurerm_resource_group.KTHW_RG.name
-#   loadbalancer_id                = azurerm_lb.LB.id
-#   name                           = "inbound_kubectl"
-#   protocol                       = "Tcp"
-#   frontend_port                  = "6443"
-#   backend_port                   = "6443"
-#   frontend_ip_configuration_name = "PublicIP"
-#   backend_address_pool_ids       = [azurerm_lb_backend_address_pool.KController_pool.id]
-# }
-
+resource "azurerm_lb_rule" "worker_loadbalancer_rule" {
+  name                           = "ControlPlane"
+  resource_group_name            = azurerm_resource_group.kthw_rg.name
+  loadbalancer_id                = azurerm_lb.kthw_worker_loadbalancer.id
+  frontend_ip_configuration_name = "worker_loadbalancer_frontend"
+  protocol                       = "Tcp"
+  frontend_port                  = 443
+  backend_port                   = 33443
+  backend_address_pool_ids       = [azurerm_lb_backend_address_pool.worker_backend_pool.id]
+  probe_id                       = azurerm_lb_probe.worker_loadbalancer_probe.id
+}
