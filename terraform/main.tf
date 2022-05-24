@@ -272,6 +272,54 @@ resource "azurerm_linux_virtual_machine" "kthw_bastion" {
     version   = "latest"
   }
 }
+
+resource "azurerm_lb" "kthw_controller_loadbalancer" {
+  name                = "kthw_controller_loadbalancer"
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+  location            = azurerm_resource_group.kthw_rg.location
+  sku                 = "Basic"
+
+  frontend_ip_configuration {
+    name                          = "controller_loadbalancer_frontend"
+    subnet_id                     = azurerm_subnet.kthw_controller_subnet.id
+    private_ip_address            = "10.10.0.4"
+    private_ip_address_allocation = "Static"
+  }
+}
+
+resource "azurerm_lb_backend_address_pool" "controller_backend_pool" {
+  loadbalancer_id = azurerm_lb.kthw_controller_loadbalancer.id
+  name            = "controller_backend_pool"
+}
+
+resource "azurerm_network_interface_backend_address_pool_association" "controller_backend_pool_addresses" {
+  count                   = var.num_controllers
+  backend_address_pool_id = azurerm_lb_backend_address_pool.controller_backend_pool.id
+  network_interface_id    = azurerm_network_interface.kthw_controller_nic[count.index].id
+  ip_configuration_name   = "internal"
+}
+
+resource "azurerm_lb_probe" "controller_loadbalancer_probe" {
+  name                = "controller_health_probe"
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+  loadbalancer_id     = azurerm_lb.kthw_controller_loadbalancer.id
+  protocol            = "Tcp"
+  port                = 6443
+}
+
+resource "azurerm_lb_rule" "controller_loadbalancer_rule" {
+  name                           = "ControlPlane"
+  resource_group_name            = azurerm_resource_group.kthw_rg.name
+  loadbalancer_id                = azurerm_lb.kthw_controller_loadbalancer.id
+  frontend_ip_configuration_name = "controller_loadbalancer_frontend"
+  protocol                       = "Tcp"
+  frontend_port                  = 6443
+  backend_port                   = 6443
+  backend_address_pool_ids       = [azurerm_lb_backend_address_pool.controller_backend_pool.id]
+  probe_id                       = azurerm_lb_probe.controller_loadbalancer_probe.id
+}
+
+
 # resource "azurerm_network_security_rule" "KTHW_NSG_External" {
 #   name                        = "External"
 #   priority                    = 101
