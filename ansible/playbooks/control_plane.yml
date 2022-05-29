@@ -1,0 +1,5 @@
+---
+- hosts: controller
+  roles:
+    - etcd
+    - control_plane
