@@ -17,7 +17,7 @@
 
 - name: Copy user csr.json to /tmp
   template:
-    src: user-csr.json
+    src: user-csr.json.j2
     dest: /tmp/user-csr.json
 
 - name: Generate client certificate for user
@@ -30,11 +30,11 @@
       -profile=kubernetes
       user-csr.json | cfssljson -bare {{ username }}
     chdir: /tmp
-    creates: /tmp/user.pem
+    creates: /tmp/{{ username }}.pem
 
 - name: Generate worker nodes certificates
   include: worker.yml worker={{item}} worker_ip={{ hostvars[item].ansible_host }}
-  with_items: "{{ groups.KWorkers }}"
+  with_items: "{{ groups.worker }}"
 
 - name: Copy kube-controller-manager-csr.json to /tmp
   copy:
