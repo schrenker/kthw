@@ -1,10 +1,16 @@
 ---
-kube_ver: "v1.21.0"
+kube_ver: "1.21.0"
+base_url: >
+  https://storage.googleapis.com/kubernetes-release/release/v
+  {{ kube_ver }}/bin/linux/amd64
+runc_ver: "1.0.0-rc93"
+runc_base_url: >
+  https://github.com/opencontainers/runc/releases/download/v{{ runc_ver }}
 crictl_url: "https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.21.0/{{ crictl_pkg }}.tar.gz"
 crictl_pkg: "crictl-v1.21.0-linux-amd64"
 containerd_url: "https://github.com/containerd/containerd/releases/download/v1.4.4/{{ containerd_pkg }}.tar.gz"
 containerd_pkg: "containerd-1.4.4-linux-amd64"
 cni_url: "https://github.com/containernetworking/plugins/releases/download/v0.9.1/{{ cni_pkg }}.tgz"
 cni_pkg: "cni-plugins-linux-amd64-v0.9.1"
-home: "/home/azureuser"
+home: "/home/{{ username }}"
 ...
