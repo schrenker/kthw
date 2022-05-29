@@ -33,7 +33,10 @@
     creates: /tmp/{{ username }}.pem
 
 - name: Generate worker nodes certificates
-  include: worker.yml worker={{item}} worker_ip={{ hostvars[item].ansible_host }}
+  include_tasks: worker.yml
+  vars:
+    worker: "{{item}}"
+    worker_ip: "{{ hostvars[item].ansible_host }}"
   with_items: "{{ groups.worker }}"
 
 - name: Copy kube-controller-manager-csr.json to /tmp
