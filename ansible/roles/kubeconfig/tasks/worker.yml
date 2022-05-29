@@ -21,4 +21,5 @@
 
       kubectl config use-context default --kubeconfig={{ worker }}.kubeconfig
     chdir: /tmp
+    creates: /tmp/{{ worker }}.kubeconfig
 ...

@@ -1,7 +1,7 @@
 ---
 - name: Generate kubeconfig for worker nodes
   include: worker.yml worker={{item}}
-  with_items: "{{ groups.KWorkers }}"
+  with_items: "{{ groups.worker }}"
 
 - name: Generate kube-proxy config file
   shell:
@@ -25,6 +25,7 @@
 
       kubectl config use-context default --kubeconfig=kube-proxy.kubeconfig
     chdir: /tmp
+    creates: /tmp/kube-proxy.kubeconfig
 
 - name: Generate kube-controller-manager config file
   shell:
@@ -48,6 +49,7 @@
 
       kubectl config use-context default --kubeconfig=kube-controller-manager.kubeconfig
     chdir: /tmp
+    creates: kube-controller-manager.kubeconfig
 
 - name: Generate kube-scheduler config file
   shell:
@@ -71,6 +73,7 @@
 
       kubectl config use-context default --kubeconfig=kube-scheduler.kubeconfig
     chdir: /tmp
+    creates: kube-scheduler.kubeconfig
 
 - name: Generate azureuser config file
   shell:
@@ -79,21 +82,22 @@
       --certificate-authority=ca.pem
       --embed-certs=true
       --server=https://127.0.0.1:6443
-      --kubeconfig=azureuser.kubeconfig
+      --kubeconfig={{ username }}.kubeconfig
 
-      kubectl config set-credentials azureuser
-      --client-certificate=azureuser.pem
-      --client-key=azureuser-key.pem
+      kubectl config set-credentials {{ username }}
+      --client-certificate=user.pem
+      --client-key=user-key.pem
       --embed-certs=true
-      --kubeconfig=azureuser.kubeconfig
+      --kubeconfig={{ username }}.kubeconfig
 
       kubectl config set-context default
       --cluster=kubernetes-the-hard-way
-      --user=azureuser
-      --kubeconfig=azureuser.kubeconfig
+      --user={{ username }}
+      --kubeconfig={{ username }}.kubeconfig
 
-      kubectl config use-context default --kubeconfig=azureuser.kubeconfig
+      kubectl config use-context default --kubeconfig={{ username }}.kubeconfig
     chdir: /tmp
+    creates: /tmp/{{ username }}.kubeconfig
 
 - name: Generate encryption key
   set_fact:
