@@ -22,6 +22,7 @@ resource "local_file" "allvars" {
     {
       loadbalancer_ip = azurerm_lb.kthw_controller_loadbalancer.frontend_ip_configuration.private_ip_address
       controller_ips  = join(",", azurerm_linux_virtual_machine.kthw_controller.*.private_ip_address)
+      username        = var.admin_username
   })
   filename = "../ansible/group_vars/all.yml"
 }
