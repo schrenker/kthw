@@ -1,18 +1,18 @@
 ---
 - hosts: controller[0]
   tasks:
-  # - name: Install pip3
-  #   apt:
-  #     name: python3-pip
-  #     state: present
-  #     update_cache: true
-  #     cache_valid_time: 3600
-  #   become: true
+  - name: Install pip3
+    apt:
+      name: python3-pip
+      state: present
+      update_cache: true
+      cache_valid_time: 3600
+    become: true
 
-  # - name: Install openshift module for python3
-  #   pip:
-  #     name: openshift
-  #     executable: pip3
+  - name: Install openshift module for python3
+    pip:
+      name: openshift
+      executable: pip3
 
   - name: Apply RBAC for kubelet authorization
     k8s:

@@ -1,0 +1,33 @@
+---
+version: '3'
+
+tasks:
+  provision:
+    dir: terraform
+    cmds:
+      - terraform init
+      - terraform apply -auto-approve
+
+  destroy:
+    dir: terraform
+    cmds:
+      - terraform destroy -auto-approve
+
+  configure:
+    dir: ansible
+    deps: [provision]
+    cmds:
+      - yes | ansible all -m ping
+      - ansible-playbook playbooks/all.yml
+
+  controlplane:
+    dir: ansible
+    cmds:
+      - ansible-playbook playbooks/control_plane.yml
+
+  cleanup:
+    deps: [destroy]
+    dir: /tmp
+    cmds:
+      - rm -f *crt *pem *kubeconfig *json
+...
