@@ -1,0 +1,25 @@
+---
+- name: Install nginx
+  apt:
+    name: nginx
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+  become: true
+
+- name: Copy health check vhost to nginx
+  copy:
+    src: kubernetes.default.svc.cluster.local
+    dest: /etc/nginx/sites-enabled/kubernetes.default.svc.cluster.local
+    owner: root
+    group: root
+    mode: '0644'
+  become: true
+  notify: reload nginx
+
+- name: Enable and start nginx
+  systemd:
+    name: nginx
+    state: started
+    enabled: true
+...

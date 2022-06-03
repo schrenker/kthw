@@ -1,6 +1,4 @@
 ---
-control_plane_ver: "1.21.0"
-home: "/home/{{ username }}"
-base_url: "https://storage.googleapis.com/kubernetes-release/release/\
-v{{ control_plane_ver }}/bin/linux/amd64"
+control_plane_ver: "v1.21.0"
+home: "/home/azureuser"
 ...

@@ -1,9 +1,7 @@
 ---
 - name: Generate kubeconfig for worker nodes
-  include_tasks: worker.yml
-  vars:
-    worker: "{{item}}"
-  with_items: "{{ groups.worker }}"
+  include: worker.yml worker={{item}}
+  with_items: "{{ groups.KWorkers }}"
 
 - name: Generate kube-proxy config file
   shell:
@@ -11,7 +9,7 @@
       kubectl config set-cluster kubernetes-the-hard-way
       --certificate-authority=ca.pem
       --embed-certs=true
-      --server=https://{{ loadbalancer_ip }}:6443
+      --server=https://{{ lb_ip }}:6443
       --kubeconfig=kube-proxy.kubeconfig
 
       kubectl config set-credentials system:kube-proxy
@@ -27,7 +25,6 @@
 
       kubectl config use-context default --kubeconfig=kube-proxy.kubeconfig
     chdir: /tmp
-    creates: /tmp/kube-proxy.kubeconfig
 
 - name: Generate kube-controller-manager config file
   shell:
@@ -51,7 +48,6 @@
 
       kubectl config use-context default --kubeconfig=kube-controller-manager.kubeconfig
     chdir: /tmp
-    creates: kube-controller-manager.kubeconfig
 
 - name: Generate kube-scheduler config file
   shell:
@@ -75,7 +71,6 @@
 
       kubectl config use-context default --kubeconfig=kube-scheduler.kubeconfig
     chdir: /tmp
-    creates: kube-scheduler.kubeconfig
 
 - name: Generate azureuser config file
   shell:
@@ -84,40 +79,20 @@
       --certificate-authority=ca.pem
       --embed-certs=true
       --server=https://127.0.0.1:6443
-      --kubeconfig={{ username }}.kubeconfig
+      --kubeconfig=azureuser.kubeconfig
 
-      kubectl config set-credentials {{ username }}
-      --client-certificate=user.pem
-      --client-key=user-key.pem
+      kubectl config set-credentials azureuser
+      --client-certificate=azureuser.pem
+      --client-key=azureuser-key.pem
       --embed-certs=true
-      --kubeconfig={{ username }}.kubeconfig
+      --kubeconfig=azureuser.kubeconfig
 
       kubectl config set-context default
       --cluster=kubernetes-the-hard-way
-      --user={{ username }}
-      --kubeconfig={{ username }}.kubeconfig
+      --user=azureuser
+      --kubeconfig=azureuser.kubeconfig
 
-      kubectl config use-context default --kubeconfig={{ username }}.kubeconfig
-    chdir: /tmp
-    creates: /tmp/{{ username }}.kubeconfig
-
-- name: Generate kubeconfig for remote kubectl
-  shell:
-    cmd: >
-      kubectl config set-cluster kubernetes-the-hard-way
-      --certificate-authority=ca.pem
-      --embed-certs=true
-      --server=https://{{ loadbalancer_ip }}:6443
-
-      kubectl config set-credentials {{ username }}
-      --client-certificate={{ username }}.pem
-      --client-key={{ username }}-key.pem
-
-      kubectl config set-context kubernetes-the-hard-way
-      --cluster=kubernetes-the-hard-way
-      --user={{ username }}
-
-      kubectl config use-context kubernetes-the-hard-way
+      kubectl config use-context default --kubeconfig=azureuser.kubeconfig
     chdir: /tmp
 
 - name: Generate encryption key

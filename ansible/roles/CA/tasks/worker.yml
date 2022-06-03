@@ -11,7 +11,7 @@
       -ca=ca.pem
       -ca-key=ca-key.pem
       -config=ca-config.json
-      -hostname={{ worker }},{{ worker_ip }},{{ loadbalancer_ip }}
+      -hostname={{ worker }},{{ worker_ip }},{{ lb_ip }}
       -profile=kubernetes
       {{ worker }}-csr.json | cfssljson -bare {{ worker }}
     chdir: /tmp

@@ -1,3 +1,3 @@
 ---
 kubehostnames: "kubernetes,kubernetes.default,kubernetes.default.svc,kubernetes.default.svc.cluster,kubernetes.svc.cluster.local"
-kubecomposite: "10.32.0.1,{{ controller_ips }},{{ kubehostnames }},127.0.0.1,{{ loadbalancer_ip }}"
+kubecomposite: "10.32.0.1,{{ controller_ip }},{{ kubehostnames }},127.0.0.1,{{ lb_ip }}"

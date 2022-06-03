@@ -1,5 +1,5 @@
 {
-  "CN": "{{ username }}",
+  "CN": "azureuser",
   "key": {
     "algo": "rsa",
     "size": 2048

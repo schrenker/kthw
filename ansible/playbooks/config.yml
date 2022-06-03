@@ -4,8 +4,9 @@
   roles:
     - CA
     - kubeconfig
+    - remote_kubectl
 
-- hosts: worker
+- hosts: KWorkers
   tasks:
     - name: Distribute worker certificates and configs
       copy:
@@ -18,7 +19,7 @@
         - {src: "/tmp/{{ inventory_hostname }}.kubeconfig", dest: "~/{{ inventory_hostname }}.kubeconfig"}
         - {src: "/tmp/kube-proxy.kubeconfig", dest: "~/kube-proxy.kubeconfig"}
 
-- hosts: controller
+- hosts: KControllers
   tasks:
     - name: Distribute controller certificates and configs
       copy:
@@ -31,7 +32,7 @@
         - {src: "/tmp/kubernetes-key.pem", dest: "~/kubernetes-key.pem"}
         - {src: "/tmp/service-account.pem", dest: "~/service-account.pem"}
         - {src: "/tmp/service-account-key.pem", dest: "~/service-account-key.pem"}
-        - {src: "/tmp/{{ username }}.kubeconfig", dest: "~/{{ username }}.kubeconfig"}
+        - {src: "/tmp/azureuser.kubeconfig", dest: "~/azureuser.kubeconfig"}
         - {src: "/tmp/kube-controller-manager.kubeconfig", dest: "~/kube-controller-manager.kubeconfig"}
         - {src: "/tmp/kube-scheduler.kubeconfig", dest: "~/kube-scheduler.kubeconfig"}
         - {src: "/tmp/encryption-config.yaml", dest: "~/encryption-config.yaml"}

@@ -7,10 +7,10 @@
     owner: root
     group: root
   with_items:
-    - "{{ base_url }}/kube-apiserver"
-    - "{{ base_url }}/kube-controller-manager"
-    - "{{ base_url }}/kube-scheduler"
-    - "{{ base_url }}/kubectl"
+    - "https://storage.googleapis.com/kubernetes-release/release/{{ control_plane_ver }}/bin/linux/amd64/kube-apiserver"
+    - "https://storage.googleapis.com/kubernetes-release/release/{{ control_plane_ver }}/bin/linux/amd64/kube-controller-manager"
+    - "https://storage.googleapis.com/kubernetes-release/release/{{ control_plane_ver }}/bin/linux/amd64/kube-scheduler"
+    - "https://storage.googleapis.com/kubernetes-release/release/{{ control_plane_ver }}/bin/linux/amd64/kubectl"
   become: true
 
 - name: Create necessary directories
@@ -56,7 +56,7 @@
   become: true
 
 - name: Get etcd peers string
-  script: ../scripts/etcd_peers.py "../inventory" "controller" "2379" 0
+  script: ../scripts/etcd_peers.py "../inventory" "KControllers" "2379" 0
   register: etcd_peers
   delegate_to: localhost
   run_once: true

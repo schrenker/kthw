@@ -1,7 +1,7 @@
 ---
 - import_playbook: config.yml
-- import_playbook: control_plane.yml
+- import_playbook: bootstrap.yml
 - import_playbook: rbac.yml
-- import_playbook: worker.yml
+- import_playbook: bootstrap_worker.yml
 - import_playbook: coredns.yml
 ...
