@@ -1,5 +1,5 @@
 ---
-- hosts: KControllers
+- hosts: controller
   roles:
     - etcd
     - control_plane
