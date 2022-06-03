@@ -5,7 +5,7 @@
       kubectl config set-cluster kubernetes-the-hard-way
       --certificate-authority=ca.pem
       --embed-certs=true
-      --server=https://{{ lb_ip }}:6443
+      --server=https://{{ loadbalancer_ip }}:6443
 
       kubectl config set-credentials azureuser
       --client-certificate=azureuser.pem
