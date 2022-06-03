@@ -15,19 +15,18 @@ tasks:
 
   configure:
     dir: ansible
-    deps: [provision]
     cmds:
-      - yes | ansible all -m ping
+      # - yes | ansible all -m ping
       - ansible-playbook playbooks/all.yml
-
-  controlplane:
-    dir: ansible
-    cmds:
-      - ansible-playbook playbooks/control_plane.yml
 
   cleanup:
     deps: [destroy]
     dir: /tmp
     cmds:
       - rm -f *crt *pem *kubeconfig *json
+
+  reset:
+    tasks:
+      - destroy
+      - provision
 ...
