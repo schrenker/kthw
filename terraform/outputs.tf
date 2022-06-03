@@ -20,7 +20,8 @@ resource "local_file" "sshcfg" {
 resource "local_file" "allvars" {
   content = templatefile("./templates/all.yml.tmpl",
     {
-      loadbalancer_ip = azurerm_lb.kthw_controller_loadbalancer.frontend_ip_configuration[0].private_ip_address
+      # loadbalancer_ip = azurerm_lb.kthw_controller_loadbalancer.frontend_ip_configuration[0].private_ip_address
+      loadbalancer_ip = azurerm_public_ip.kthw_loadbalancer_public_ip.ip_address
       controller_ips  = join(",", azurerm_linux_virtual_machine.kthw_controller.*.private_ip_address)
       username        = var.admin_username
   })

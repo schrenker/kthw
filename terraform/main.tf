@@ -120,6 +120,20 @@ resource "azurerm_network_security_rule" "nsg_rule_allow_pods_to_controllers" {
   network_security_group_name  = azurerm_network_security_group.kthw_controller_nsg.name
 }
 
+resource "azurerm_network_security_rule" "nsg_rule_allow_https_port" {
+  name                         = "allow_https_port"
+  priority                     = 1010
+  direction                    = "Inbound"
+  access                       = "Allow"
+  protocol                     = "Tcp"
+  source_port_range            = "*"
+  destination_port_range       = "6443"
+  source_address_prefixes      = ["0.0.0.0/0"]
+  destination_address_prefixes = ["10.10.10.0/24"]
+  resource_group_name          = azurerm_resource_group.kthw_rg.name
+  network_security_group_name  = azurerm_network_security_group.kthw_controller_nsg.name
+}
+
 resource "azurerm_network_security_rule" "nsg_rule_allow_ssh_to_bastion" {
   name                         = "allow_ssh_to_bastion"
   priority                     = 1000
@@ -285,13 +299,11 @@ resource "azurerm_lb" "kthw_controller_loadbalancer" {
   name                = "kthw_controller_loadbalancer"
   resource_group_name = azurerm_resource_group.kthw_rg.name
   location            = azurerm_resource_group.kthw_rg.location
-  sku                 = "Basic"
+  sku                 = "Standard"
 
   frontend_ip_configuration {
-    name                          = "controller_loadbalancer_frontend"
-    subnet_id                     = azurerm_subnet.kthw_controller_subnet.id
-    private_ip_address            = "10.10.10.4"
-    private_ip_address_allocation = "Static"
+    name                 = "controller_loadbalancer_frontend"
+    public_ip_address_id = azurerm_public_ip.kthw_loadbalancer_public_ip.id
   }
 }
 
@@ -311,8 +323,9 @@ resource "azurerm_lb_probe" "controller_loadbalancer_probe" {
   name                = "controller_health_probe"
   resource_group_name = azurerm_resource_group.kthw_rg.name
   loadbalancer_id     = azurerm_lb.kthw_controller_loadbalancer.id
-  protocol            = "Tcp"
+  protocol            = "Https"
   port                = 6443
+  request_path        = "/healthz"
 }
 
 resource "azurerm_lb_rule" "controller_loadbalancer_rule" {
@@ -325,48 +338,4 @@ resource "azurerm_lb_rule" "controller_loadbalancer_rule" {
   backend_port                   = 6443
   backend_address_pool_ids       = [azurerm_lb_backend_address_pool.controller_backend_pool.id]
   probe_id                       = azurerm_lb_probe.controller_loadbalancer_probe.id
-}
-
-resource "azurerm_lb" "kthw_worker_loadbalancer" {
-  name                = "kthw_worker_loadbalancer"
-  resource_group_name = azurerm_resource_group.kthw_rg.name
-  location            = azurerm_resource_group.kthw_rg.location
-  sku                 = "Standard"
-
-  frontend_ip_configuration {
-    name                 = "worker_loadbalancer_frontend"
-    public_ip_address_id = azurerm_public_ip.kthw_loadbalancer_public_ip.id
-  }
-}
-
-resource "azurerm_lb_backend_address_pool" "worker_backend_pool" {
-  loadbalancer_id = azurerm_lb.kthw_worker_loadbalancer.id
-  name            = "worker_backend_pool"
-}
-
-resource "azurerm_network_interface_backend_address_pool_association" "worker_backend_pool_addresses" {
-  count                   = var.num_workers
-  backend_address_pool_id = azurerm_lb_backend_address_pool.worker_backend_pool.id
-  network_interface_id    = azurerm_network_interface.kthw_worker_nic[count.index].id
-  ip_configuration_name   = "internal"
-}
-
-resource "azurerm_lb_probe" "worker_loadbalancer_probe" {
-  name                = "worker_health_probe"
-  resource_group_name = azurerm_resource_group.kthw_rg.name
-  loadbalancer_id     = azurerm_lb.kthw_worker_loadbalancer.id
-  protocol            = "Tcp"
-  port                = 33443
-}
-
-resource "azurerm_lb_rule" "worker_loadbalancer_rule" {
-  name                           = "ControlPlane"
-  resource_group_name            = azurerm_resource_group.kthw_rg.name
-  loadbalancer_id                = azurerm_lb.kthw_worker_loadbalancer.id
-  frontend_ip_configuration_name = "worker_loadbalancer_frontend"
-  protocol                       = "Tcp"
-  frontend_port                  = 443
-  backend_port                   = 33443
-  backend_address_pool_ids       = [azurerm_lb_backend_address_pool.worker_backend_pool.id]
-  probe_id                       = azurerm_lb_probe.worker_loadbalancer_probe.id
 }
