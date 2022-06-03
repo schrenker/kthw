@@ -16,17 +16,16 @@ tasks:
   configure:
     dir: ansible
     cmds:
-      # - yes | ansible all -m ping
       - ansible-playbook playbooks/all.yml
 
   cleanup:
-    deps: [destroy]
     dir: /tmp
     cmds:
       - rm -f *crt *pem *kubeconfig *json
 
   reset:
-    tasks:
-      - destroy
-      - provision
+    cmds:
+      - task: destroy
+      - task: cleanup
+      - task: provision
 ...
