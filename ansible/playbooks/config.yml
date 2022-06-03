@@ -6,7 +6,7 @@
     - kubeconfig
     - remote_kubectl
 
-- hosts: KWorkers
+- hosts: worker
   tasks:
     - name: Distribute worker certificates and configs
       copy:
@@ -19,7 +19,7 @@
         - {src: "/tmp/{{ inventory_hostname }}.kubeconfig", dest: "~/{{ inventory_hostname }}.kubeconfig"}
         - {src: "/tmp/kube-proxy.kubeconfig", dest: "~/kube-proxy.kubeconfig"}
 
-- hosts: KControllers
+- hosts: controller
   tasks:
     - name: Distribute controller certificates and configs
       copy:
