@@ -4,7 +4,8 @@
   roles:
     - CA
     - kubeconfig
-    - remote_kubectl
+
+- import_playbook: remote_kubectl.yml
 
 - hosts: worker
   tasks:
