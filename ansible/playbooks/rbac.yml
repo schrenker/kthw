@@ -17,7 +17,7 @@
   - name: Apply RBAC for kubelet authorization
     k8s:
       state: present
-      kubeconfig: azureuser.kubeconfig
+      kubeconfig: "{{ username }}.kubeconfig"
       definition:
         apiVersion: rbac.authorization.k8s.io/v1
         kind: ClusterRole
@@ -42,7 +42,7 @@
   - name: Bind system:kube-apiserver-to-kubelet role to kubernetes user
     k8s:
       state: present
-      kubeconfig: azureuser.kubeconfig
+      kubeconfig: "{{ username }}.kubeconfig"
       definition:
         apiVersion: rbac.authorization.k8s.io/v1
         kind: ClusterRoleBinding

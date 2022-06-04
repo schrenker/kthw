@@ -15,12 +15,12 @@
     chdir: /tmp
     creates: /tmp/ca.pem
 
-- name: Copy azureuser-csr.json to /tmp
-  copy:
-    src: azureuser-csr.json
-    dest: /tmp/azureuser-csr.json
+- name: Copy username-csr.json to /tmp
+  template:
+    src: username-csr.json.j2
+    dest: /tmp/{{ username }}-csr.json
 
-- name: Generate client certificate for azureuser user
+- name: Generate client certificate for {{ username }} user
   shell:
     cmd: >
       cfssl gencert
@@ -28,9 +28,9 @@
       -ca-key=ca-key.pem
       -config=ca-config.json
       -profile=kubernetes
-      azureuser-csr.json | cfssljson -bare azureuser
+      {{ username }}-csr.json | cfssljson -bare {{ username }}
     chdir: /tmp
-    creates: /tmp/azureuser.pem
+    creates: /tmp/{{ username }}.pem
 
 - name: Generate worker nodes certificates
   include_tasks: worker.yml

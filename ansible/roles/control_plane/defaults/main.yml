@@ -1,4 +1,4 @@
 ---
 control_plane_ver: "v1.21.0"
-home: "/home/azureuser"
+home: "/home/{{ username }}"
 ...

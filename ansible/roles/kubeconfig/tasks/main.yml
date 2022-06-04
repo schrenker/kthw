@@ -73,29 +73,31 @@
 
       kubectl config use-context default --kubeconfig=kube-scheduler.kubeconfig
     chdir: /tmp
+    creates: kube-scheduler.kubeconfig
 
-- name: Generate azureuser config file
+- name: Generate {{ username }} config file
   shell:
     cmd: >
       kubectl config set-cluster kubernetes-the-hard-way
       --certificate-authority=ca.pem
       --embed-certs=true
       --server=https://127.0.0.1:6443
-      --kubeconfig=azureuser.kubeconfig
+      --kubeconfig={{ username }}.kubeconfig
 
-      kubectl config set-credentials azureuser
-      --client-certificate=azureuser.pem
-      --client-key=azureuser-key.pem
+      kubectl config set-credentials {{ username }}
+      --client-certificate={{ username }}.pem
+      --client-key={{ username }}-key.pem
       --embed-certs=true
-      --kubeconfig=azureuser.kubeconfig
+      --kubeconfig={{ username }}.kubeconfig
 
       kubectl config set-context default
       --cluster=kubernetes-the-hard-way
-      --user=azureuser
-      --kubeconfig=azureuser.kubeconfig
+      --user={{ username }}
+      --kubeconfig={{ username }}.kubeconfig
 
-      kubectl config use-context default --kubeconfig=azureuser.kubeconfig
+      kubectl config use-context default --kubeconfig={{ username }}.kubeconfig
     chdir: /tmp
+    creates: "{{ username }}.kubeconfig"
 
 
 - name: Generate kubeconfig for remote kubectl
@@ -106,20 +108,22 @@
       --embed-certs=true
       --server=https://{{ loadbalancer_ip }}:6443
 
-      kubectl config set-credentials azureuser
-      --client-certificate=azureuser.pem
-      --client-key=azureuser-key.pem
+      kubectl config set-credentials {{ username }}
+      --client-certificate={{ username }}.pem
+      --client-key={{ username }}-key.pem
 
       kubectl config set-context kubernetes-the-hard-way
       --cluster=kubernetes-the-hard-way
-      --user=azureuser
+      --user={{ username }}
 
       kubectl config use-context kubernetes-the-hard-way
     chdir: /tmp
+  changed_when: false
 
 - name: Generate encryption key
   set_fact:
     encryption_key: "{{ lookup('password', '/dev/null length=16 chars=ascii_letters') | b64encode }}"
+  changed_when: false
 
 - name: Generate encryption config file
   template:
