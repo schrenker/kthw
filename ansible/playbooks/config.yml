@@ -5,7 +5,7 @@
     - CA
     - kubeconfig
 
-- import_playbook: remote_kubectl.yml
+# - import_playbook: remote_kubectl.yml
 
 - hosts: worker
   tasks:
