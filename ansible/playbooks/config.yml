@@ -5,8 +5,6 @@
     - CA
     - kubeconfig
 
-# - import_playbook: remote_kubectl.yml
-
 - hosts: worker
   tasks:
     - name: Distribute worker certificates and configs
