@@ -27,6 +27,7 @@
 
       kubectl config use-context default --kubeconfig=kube-proxy.kubeconfig
     chdir: /tmp
+    creates: kube-proxy.kubeconfig
 
 - name: Generate kube-controller-manager config file
   shell:
@@ -50,6 +51,7 @@
 
       kubectl config use-context default --kubeconfig=kube-controller-manager.kubeconfig
     chdir: /tmp
+    creates: kube-controller-manager.kubeconfig
 
 - name: Generate kube-scheduler config file
   shell:
