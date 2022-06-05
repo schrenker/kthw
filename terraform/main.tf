@@ -1,8 +1,10 @@
+# 01 - Governance
 resource "azurerm_resource_group" "kthw_rg" {
   name     = "kthw_rg"
   location = "North Europe"
 }
 
+# 02 - Networking
 resource "azurerm_virtual_network" "kthw_vnet" {
   name                = "kthw_vnet"
   resource_group_name = azurerm_resource_group.kthw_rg.name
@@ -73,6 +75,7 @@ resource "azurerm_subnet_route_table_association" "worker_subnet_route_assoc" {
   route_table_id = azurerm_route_table.kthw_route_table_pods.id
 }
 
+# 03 - Communication flow
 resource "azurerm_network_security_group" "kthw_controller_nsg" {
   name                = "kthw_controller_nsg"
   location            = azurerm_resource_group.kthw_rg.location
@@ -148,6 +151,7 @@ resource "azurerm_network_security_rule" "nsg_rule_allow_ssh_to_bastion" {
   network_security_group_name  = azurerm_network_security_group.kthw_bastion_nsg.name
 }
 
+# 04 - Compute
 resource "azurerm_availability_set" "kthw_controller_as" {
   name                = "kthw_controller_as"
   resource_group_name = azurerm_resource_group.kthw_rg.name
@@ -165,7 +169,6 @@ resource "azurerm_network_interface" "kthw_controller_nic" {
   name                = "${var.controller_name}${count.index}"
   resource_group_name = azurerm_resource_group.kthw_rg.name
   location            = azurerm_resource_group.kthw_rg.location
-  # enable_ip_forwarding = true
 
   ip_configuration {
     name                          = "internal"
@@ -194,7 +197,6 @@ resource "azurerm_network_interface" "kthw_bastion_nic" {
   name                = "kthw_bastion_nic"
   resource_group_name = azurerm_resource_group.kthw_rg.name
   location            = azurerm_resource_group.kthw_rg.location
-  # enable_ip_forwarding = true
 
   ip_configuration {
     name                          = "bastion"
@@ -295,6 +297,7 @@ resource "azurerm_linux_virtual_machine" "kthw_bastion" {
   }
 }
 
+# 05 - External access
 resource "azurerm_lb" "kthw_controller_loadbalancer" {
   name                = "kthw_controller_loadbalancer"
   resource_group_name = azurerm_resource_group.kthw_rg.name
