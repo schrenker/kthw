@@ -1,47 +1,52 @@
 #+TITLE: README
 #+AUTHOR: Sebastian Zawadzki
 
-* Kubernetes the Hard Way... On Azure
+* IaC Kubernetes the Hard Way
 Inspired by https://github.com/kelseyhightower/kubernetes-the-hard-way
 
 Project uses Terraform to provision infrastructure on Microsoft Azure, and then bootstraps Kubenernetes cluster from scratch by Ansible. Playbooks and roles loosely follow original project by Kelsey Hightower.
 
 ** Considerations
 I've encountered some limitations based on available resources - infrastructure was provisioned on Student Subscription on Azure which is limited to some extend:
-- Maximum of 6vCPU used per region
-- Maximum of 4vCPU used per Virtual Machine family
-- Very limited access to AAD (Azure Active Directory)
-- Unlike GCP, there is no way of accessing Virtual Machines via ssh without public IP address without Bastion host
-- Obviously, there are some differences between GCP and Azure, which might reflect on project itself
+- Maximum of 6vCPU used per region.
+- Maximum of 4vCPU used per Virtual Machine family.
+- Very limited access to AAD (Azure Active Directory).
+- Unlike GCP, there is no way of accessing Virtual Machines via ssh without public IP address without Bastion host (Recently Azure added similar option via Azure Bastion, however you still need to tunnel the traffic. For my use case, it was still easier to use plain VM as bastion host. Also cheaper.)
+- Obviously, there are some differences between GCP and Azure, which might reflect on project itself.
 
 ** Infrastructure
-Having considerations in mind, provisioned infrastructure is as follows:
 
-#+ATTR_HTML: :style margin-left: auto; margin-right: auto;
-[[./KTHW.png]]
+*** Network
+- Single Azure VNet: 10.10.0.0/16.
+- Three subnets for each compute group.
+- Two resources have public IP addresses associated to them: Bastion host and Azure Load Balancer.
+- Main entry point to the cluster is Standard Azure Load balancer. Currently it only accepts traffic on port 6443 (kubectl).
+- Administrative access to the cluster is provided via Bastion host, which is mostly used to proxy ansible ssh connections to hosts with private addressing.
+- Every subnet is secured with Network Security Group allowing only necessary traffic for given resource.
+- Additionally, there is another network with range 10.20.0.0/16. This network is not allocated in Azure. Instead, this network is used by pods, and traffic to these is routed with Azure Routing Table to correct worker nodes.
 
-*** Controllers
-- Ansible group: KControllers
-- Addresses: 10.10.10.1X
+*** Compute
+- There are three groups of hosts: Bastion, Control Plane and Workers.
+
+**** Controllers
+- Ansible group: controller
+- Subnet: 10.10.10.0/24
+- Pod subnet: 10.20.0.0/24
+- Availability Set: kthw_controller_as
 - Virtual machine type: Standard A1_v2
-- User: azureuser
 
-Control plane and Kubernetes controllers. Azure Load Balancer distributes traffic between these.
-
-*** Workers
-- Ansible group: KWorkers
-- Addresses: 10.10.10.2X, 10.20.X.0/24 (Kubenetes pod CIDR)
+**** Workers
+- Ansible group: worker
+- Subnet: 10.10.20.0/24
+- Pod subnet: 10.20.1.0/24
+- Availability Set: kthw_worker_as
 - Virtual machine type: Standard DS1_v2
-- User: azureuser
 
-Kubernetes workers. Azure route table is provisioned in order to route pod addresses into correct worker nodes.
-
-*** Jumpbox
-- Address: 10.10.10.100
+**** Bastion
+- Ansible group: bastion
+- Subnet: 10.10.0.0/24
+- Pod subnet: 10.20.2.0/24
 - Virtual machine type: Standard B1s
-- User: azureuser
-
-Acts as a way in for ssh (Ansible) into internal network.
 
 ** Terraform
 Project uses flat project structure, with most of the resources defined in single file.
@@ -50,7 +55,7 @@ Project uses flat project structure, with most of the resources defined in singl
 Considering limited access to AAD on Student Subscription, project uses basic ~az login~ authentication method. Switching to other methods, like Service Principal should require no changes to the project itself.
 
 *** Generated files
-Upon running, Terraform generates couple of files for Ansible to use:
+Upon running, Terraform generates couple of files for Ansible to use, based on defined hosts:
 - ansible/ssh.cfg
 - ansible/inventory
 - ansible/group_vars/all.yml
@@ -58,10 +63,10 @@ Upon running, Terraform generates couple of files for Ansible to use:
 These files contain IP addresses which are known only after infrastructure is provisioned, so it's logicall for Terraform to generate these files, especially since templating capabilities of Terraform are really good.
 
 ** Ansible
-Almost all of the Ansible code is idempotent - there are some shell tasks, that are idempotent, but making them report OK instead of Changed is challenging in context they are used in. Running same tasks twice should not generate any side effects.
+All ansible roles and playbooks follow idempotency rule.
 
 *** Roles
 Most of Ansible code is split into roles. They loosely follow the order in which original KTHW project follows - while they are split into respective functions, it is not as strict as usual Ansible roles should be formatted.
 
 *** Playbooks
-Playbooks are split into whatever I was doing at the moment. The only one that should be used to fully bootstrap cluster is all.yml, which runs all tasks in correct order.
+Playbooks are split into separate parts, which represent one area of bootstrapping the cluster, usually a single role, or similar tasks. The only one that should be used to fully bootstrap cluster is all.yml, which runs all other playbooks in correct order.
