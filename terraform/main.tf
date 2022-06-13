@@ -1,214 +1,226 @@
-resource "azurerm_resource_group" "KTHW_RG" {
-  name     = "KTHW_RG"
+# 01 - Governance
+resource "azurerm_resource_group" "kthw_rg" {
+  name     = "kthw_rg"
   location = "North Europe"
-  tags = {
-    "env" = "kthw"
-  }
 }
 
-resource "azurerm_virtual_network" "KTHW_VNet" {
-  name                = "KTHW_VNet"
-  location            = azurerm_resource_group.KTHW_RG.location
-  resource_group_name = azurerm_resource_group.KTHW_RG.name
+# 02 - Networking
+resource "azurerm_virtual_network" "kthw_vnet" {
+  name                = "kthw_vnet"
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+  location            = azurerm_resource_group.kthw_rg.location
   address_space       = ["10.10.0.0/16"]
-  tags = {
-    "env" = "kthw"
-  }
 }
 
-resource "azurerm_subnet" "KTHW_Subnet1" {
-  name                 = "KTHW_Subnet1"
-  resource_group_name  = azurerm_resource_group.KTHW_RG.name
-  virtual_network_name = azurerm_virtual_network.KTHW_VNet.name
+resource "azurerm_subnet" "kthw_bastion_subnet" {
+  name                 = "kthw_bastion_subnet"
+  resource_group_name  = azurerm_resource_group.kthw_rg.name
+  virtual_network_name = azurerm_virtual_network.kthw_vnet.name
+  address_prefixes     = ["10.10.0.0/24"]
+}
+
+resource "azurerm_subnet" "kthw_controller_subnet" {
+  name                 = "kthw_controller_subnet"
+  resource_group_name  = azurerm_resource_group.kthw_rg.name
+  virtual_network_name = azurerm_virtual_network.kthw_vnet.name
   address_prefixes     = ["10.10.10.0/24"]
 }
 
-resource "azurerm_network_security_group" "KTHW_NSG" {
-  name                = "KTHW_NSG"
-  location            = azurerm_resource_group.KTHW_RG.location
-  resource_group_name = azurerm_resource_group.KTHW_RG.name
+resource "azurerm_subnet" "kthw_worker_subnet" {
+  name                 = "kthw_worker_subnet"
+  resource_group_name  = azurerm_resource_group.kthw_rg.name
+  virtual_network_name = azurerm_virtual_network.kthw_vnet.name
+  address_prefixes     = ["10.10.20.0/24"]
 }
 
-resource "azurerm_subnet_network_security_group_association" "KTHW_Subnet1_NSG" {
-  subnet_id                 = azurerm_subnet.KTHW_Subnet1.id
-  network_security_group_id = azurerm_network_security_group.KTHW_NSG.id
+resource "azurerm_public_ip" "kthw_bastion_public_ip" {
+  name                = "kthw_bastion_public_ip"
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+  location            = azurerm_resource_group.kthw_rg.location
+  allocation_method   = "Static"
+  sku                 = "Standard"
 }
 
-resource "azurerm_network_security_rule" "KTHW_NSG_Internal" {
-  name                         = "Internal"
-  priority                     = 100
+resource "azurerm_public_ip" "kthw_loadbalancer_public_ip" {
+  name                = "kthw_loadbalancer_public_ip"
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+  location            = azurerm_resource_group.kthw_rg.location
+  allocation_method   = "Static"
+  sku                 = "Standard"
+}
+
+resource "azurerm_route_table" "kthw_route_table_pods" {
+  name                = "kthw_route_table_pods"
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+  location            = azurerm_resource_group.kthw_rg.location
+}
+
+resource "azurerm_route" "pod_route" {
+  count                  = var.num_workers
+  name                   = "pod_route_${count.index}"
+  resource_group_name    = azurerm_resource_group.kthw_rg.name
+  route_table_name       = azurerm_route_table.kthw_route_table_pods.name
+  address_prefix         = "10.20.${count.index}.0/24"
+  next_hop_type          = "VirtualAppliance"
+  next_hop_in_ip_address = "10.10.20.1${count.index}"
+}
+
+resource "azurerm_subnet_route_table_association" "control_subnet_route_assoc" {
+  subnet_id      = azurerm_subnet.kthw_controller_subnet.id
+  route_table_id = azurerm_route_table.kthw_route_table_pods.id
+}
+
+resource "azurerm_subnet_route_table_association" "worker_subnet_route_assoc" {
+  subnet_id      = azurerm_subnet.kthw_worker_subnet.id
+  route_table_id = azurerm_route_table.kthw_route_table_pods.id
+}
+
+# 03 - Communication flow
+resource "azurerm_network_security_group" "kthw_controller_nsg" {
+  name                = "kthw_controller_nsg"
+  location            = azurerm_resource_group.kthw_rg.location
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+}
+
+resource "azurerm_network_security_group" "kthw_worker_nsg" {
+  name                = "kthw_worker_nsg"
+  location            = azurerm_resource_group.kthw_rg.location
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+}
+
+resource "azurerm_network_security_group" "kthw_bastion_nsg" {
+  name                = "kthw_bastion_nsg"
+  location            = azurerm_resource_group.kthw_rg.location
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+}
+
+resource "azurerm_subnet_network_security_group_association" "nsg_controller_subnet_assoc" {
+  subnet_id                 = azurerm_subnet.kthw_controller_subnet.id
+  network_security_group_id = azurerm_network_security_group.kthw_controller_nsg.id
+}
+
+resource "azurerm_subnet_network_security_group_association" "nsg_worker_subnet_assoc" {
+  subnet_id                 = azurerm_subnet.kthw_worker_subnet.id
+  network_security_group_id = azurerm_network_security_group.kthw_worker_nsg.id
+}
+
+resource "azurerm_subnet_network_security_group_association" "nsg_bastion_subnet_assoc" {
+  subnet_id                 = azurerm_subnet.kthw_bastion_subnet.id
+  network_security_group_id = azurerm_network_security_group.kthw_bastion_nsg.id
+}
+
+resource "azurerm_network_security_rule" "nsg_rule_allow_pods_to_controllers" {
+  name                         = "allow_pods_to_controllers"
+  priority                     = 1000
   direction                    = "Inbound"
   access                       = "Allow"
   protocol                     = "*"
   source_port_range            = "*"
   destination_port_range       = "*"
-  source_address_prefixes      = ["10.10.10.0/24", "10.20.0.0/16"]
-  destination_address_prefixes = ["10.10.10.0/24", "10.20.0.0/16"]
-  resource_group_name          = azurerm_resource_group.KTHW_RG.name
-  network_security_group_name  = azurerm_network_security_group.KTHW_NSG.name
+  source_address_prefixes      = ["10.20.0.0/16"]
+  destination_address_prefixes = ["10.10.10.0/24"]
+  resource_group_name          = azurerm_resource_group.kthw_rg.name
+  network_security_group_name  = azurerm_network_security_group.kthw_controller_nsg.name
 }
 
-resource "azurerm_network_security_rule" "KTHW_NSG_External" {
-  name                        = "External"
-  priority                    = 101
-  direction                   = "Inbound"
-  access                      = "Allow"
-  protocol                    = "Tcp"
-  source_port_range           = "*"
-  destination_port_ranges     = ["22", "6443"]
-  source_address_prefix       = "*"
-  destination_address_prefix  = "*"
-  resource_group_name         = azurerm_resource_group.KTHW_RG.name
-  network_security_group_name = azurerm_network_security_group.KTHW_NSG.name
+resource "azurerm_network_security_rule" "nsg_rule_allow_https_port" {
+  name                         = "allow_https_port"
+  priority                     = 1010
+  direction                    = "Inbound"
+  access                       = "Allow"
+  protocol                     = "Tcp"
+  source_port_range            = "*"
+  destination_port_range       = "6443"
+  source_address_prefixes      = ["0.0.0.0/0"]
+  destination_address_prefixes = ["10.10.10.0/24"]
+  resource_group_name          = azurerm_resource_group.kthw_rg.name
+  network_security_group_name  = azurerm_network_security_group.kthw_controller_nsg.name
 }
 
-resource "azurerm_network_security_rule" "KTHW_NSG_External_ICMP" {
-  name                        = "External_ICMP"
-  priority                    = 102
-  direction                   = "Inbound"
-  access                      = "Allow"
-  protocol                    = "Icmp"
-  source_port_range           = "*"
-  destination_port_range      = "*"
-  source_address_prefix       = "*"
-  destination_address_prefix  = "*"
-  resource_group_name         = azurerm_resource_group.KTHW_RG.name
-  network_security_group_name = azurerm_network_security_group.KTHW_NSG.name
+resource "azurerm_network_security_rule" "nsg_rule_allow_ssh_to_bastion" {
+  name                         = "allow_ssh_to_bastion"
+  priority                     = 1000
+  direction                    = "Inbound"
+  access                       = "Allow"
+  protocol                     = "TCP"
+  source_port_range            = "*"
+  destination_port_range       = "22"
+  source_address_prefixes      = ["0.0.0.0/0"]
+  destination_address_prefixes = ["10.10.0.0/24"]
+  resource_group_name          = azurerm_resource_group.kthw_rg.name
+  network_security_group_name  = azurerm_network_security_group.kthw_bastion_nsg.name
 }
 
-resource "azurerm_public_ip" "jumpbox_ip" {
-  name                = "jumpbox_ip"
-  resource_group_name = azurerm_resource_group.KTHW_RG.name
-  location            = azurerm_resource_group.KTHW_RG.location
-  allocation_method   = "Static"
+# 04 - Compute
+resource "azurerm_availability_set" "kthw_controller_as" {
+  name                = "kthw_controller_as"
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+  location            = azurerm_resource_group.kthw_rg.location
 }
 
-resource "azurerm_network_interface" "Jumpbox_NIC" {
-  name                 = "Jumpbox_NIC"
-  resource_group_name  = azurerm_resource_group.KTHW_RG.name
-  location             = azurerm_resource_group.KTHW_RG.location
-  enable_ip_forwarding = true
-
-  ip_configuration {
-    name                          = "jumpbox"
-    subnet_id                     = azurerm_subnet.KTHW_Subnet1.id
-    private_ip_address_allocation = "Static"
-    private_ip_address            = "10.10.10.100"
-    public_ip_address_id          = azurerm_public_ip.jumpbox_ip.id
-  }
+resource "azurerm_availability_set" "kthw_worker_as" {
+  name                = "kthw_worker_as"
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+  location            = azurerm_resource_group.kthw_rg.location
 }
 
-resource "azurerm_linux_virtual_machine" "Jumpbox" {
-  name                = "Jumpbox"
-  resource_group_name = azurerm_resource_group.KTHW_RG.name
-  location            = azurerm_resource_group.KTHW_RG.location
-  size                = "Standard_B1s"
-  admin_username      = "azureuser"
-  network_interface_ids = [
-    azurerm_network_interface.Jumpbox_NIC.id
-  ]
-
-  admin_ssh_key {
-    username   = "azureuser"
-    public_key = file("../pub.key")
-  }
-
-  os_disk {
-    caching              = "None"
-    storage_account_type = "Standard_LRS"
-  }
-
-  source_image_reference {
-    publisher = "Canonical"
-    offer     = "UbuntuServer"
-    sku       = "18.04-LTS"
-    version   = "latest"
-  }
-
-  tags = {
-    "env"  = "kthw"
-    "type" = "jumpbox"
-  }
-}
-
-resource "azurerm_network_interface" "KController_NIC" {
-  count                = 2
-  name                 = "${var.controller_name}_${count.index}"
-  resource_group_name  = azurerm_resource_group.KTHW_RG.name
-  location             = azurerm_resource_group.KTHW_RG.location
-  enable_ip_forwarding = true
+resource "azurerm_network_interface" "kthw_controller_nic" {
+  count               = var.num_controllers
+  name                = "${var.controller_name}${count.index}"
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+  location            = azurerm_resource_group.kthw_rg.location
 
   ip_configuration {
     name                          = "internal"
-    subnet_id                     = azurerm_subnet.KTHW_Subnet1.id
+    subnet_id                     = azurerm_subnet.kthw_controller_subnet.id
     private_ip_address_allocation = "Static"
     private_ip_address            = "10.10.10.1${count.index}"
   }
 }
 
-resource "azurerm_linux_virtual_machine" "KController" {
-  count               = 2
-  name                = "${var.controller_name}${count.index}"
-  resource_group_name = azurerm_resource_group.KTHW_RG.name
-  location            = azurerm_resource_group.KTHW_RG.location
-  size                = "Standard_A1_v2"
-  admin_username      = "azureuser"
-  network_interface_ids = [
-    azurerm_network_interface.KController_NIC[count.index].id
-  ]
-
-  admin_ssh_key {
-    username   = "azureuser"
-    public_key = file("../pub.key")
-  }
-
-  os_disk {
-    caching              = "None"
-    storage_account_type = "Standard_LRS"
-    disk_size_gb         = 50
-  }
-
-  source_image_reference {
-    publisher = "Canonical"
-    offer     = "UbuntuServer"
-    sku       = "18.04-LTS"
-    version   = "latest"
-  }
-
-  tags = {
-    "env"  = "kthw"
-    "type" = "controller"
-  }
-}
-
-resource "azurerm_network_interface" "KWorker_NIC" {
-  count                = 3
-  name                 = "${var.worker_name}_${count.index}"
-  resource_group_name  = azurerm_resource_group.KTHW_RG.name
-  location             = azurerm_resource_group.KTHW_RG.location
+resource "azurerm_network_interface" "kthw_worker_nic" {
+  count                = var.num_workers
+  name                 = "${var.worker_name}${count.index}"
+  resource_group_name  = azurerm_resource_group.kthw_rg.name
+  location             = azurerm_resource_group.kthw_rg.location
   enable_ip_forwarding = true
 
   ip_configuration {
     name                          = "internal"
-    subnet_id                     = azurerm_subnet.KTHW_Subnet1.id
+    subnet_id                     = azurerm_subnet.kthw_worker_subnet.id
     private_ip_address_allocation = "Static"
-    private_ip_address            = "10.10.10.2${count.index}"
+    private_ip_address            = "10.10.20.1${count.index}"
   }
 }
 
-resource "azurerm_linux_virtual_machine" "KWorker" {
-  count               = 3
-  name                = "${var.worker_name}${count.index}"
-  resource_group_name = azurerm_resource_group.KTHW_RG.name
-  location            = azurerm_resource_group.KTHW_RG.location
-  size                = "Standard_DS1_v2"
-  admin_username      = "azureuser"
+resource "azurerm_network_interface" "kthw_bastion_nic" {
+  name                = "kthw_bastion_nic"
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+  location            = azurerm_resource_group.kthw_rg.location
+
+  ip_configuration {
+    name                          = "bastion"
+    subnet_id                     = azurerm_subnet.kthw_bastion_subnet.id
+    private_ip_address_allocation = "Static"
+    private_ip_address            = "10.10.0.10"
+    public_ip_address_id          = azurerm_public_ip.kthw_bastion_public_ip.id
+  }
+}
+
+resource "azurerm_linux_virtual_machine" "kthw_controller" {
+  count               = var.num_controllers
+  name                = "${var.controller_name}${count.index}"
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+  location            = azurerm_resource_group.kthw_rg.location
+  size                = var.controller_vm
+  admin_username      = var.admin_username
   network_interface_ids = [
-    azurerm_network_interface.KWorker_NIC[count.index].id
+    azurerm_network_interface.kthw_controller_nic[count.index].id
   ]
+  availability_set_id = azurerm_availability_set.kthw_controller_as.id
 
   admin_ssh_key {
-    username   = "azureuser"
+    username   = var.admin_username
     public_key = file("../pub.key")
   }
 
@@ -224,72 +236,109 @@ resource "azurerm_linux_virtual_machine" "KWorker" {
     sku       = "18.04-LTS"
     version   = "latest"
   }
+}
 
-  tags = {
-    "env"  = "kthw"
-    "type" = "worker"
+resource "azurerm_linux_virtual_machine" "kthw_worker" {
+  count               = var.num_workers
+  name                = "${var.worker_name}${count.index}"
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+  location            = azurerm_resource_group.kthw_rg.location
+  size                = var.worker_vm
+  admin_username      = var.admin_username
+  network_interface_ids = [
+    azurerm_network_interface.kthw_worker_nic[count.index].id
+  ]
+  availability_set_id = azurerm_availability_set.kthw_worker_as.id
+
+  admin_ssh_key {
+    username   = var.admin_username
+    public_key = file("../pub.key")
+  }
+
+  os_disk {
+    caching              = "None"
+    storage_account_type = "Standard_LRS"
+    disk_size_gb         = 50
+  }
+
+  source_image_reference {
+    publisher = "Canonical"
+    offer     = "UbuntuServer"
+    sku       = "18.04-LTS"
+    version   = "latest"
   }
 }
 
-resource "azurerm_public_ip" "KTHW_LB_IP" {
-  name                = "KTHW_LB_IP"
-  resource_group_name = azurerm_resource_group.KTHW_RG.name
-  location            = azurerm_resource_group.KTHW_RG.location
-  allocation_method   = "Static"
-  sku                 = "Standard"
+resource "azurerm_linux_virtual_machine" "kthw_bastion" {
+  name                = "kthwbastion"
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+  location            = azurerm_resource_group.kthw_rg.location
+  size                = var.bastion_vm
+  admin_username      = var.admin_username
+  network_interface_ids = [
+    azurerm_network_interface.kthw_bastion_nic.id
+  ]
+
+  admin_ssh_key {
+    username   = var.admin_username
+    public_key = file("../pub.key")
+  }
+
+  os_disk {
+    caching              = "None"
+    storage_account_type = "Standard_LRS"
+  }
+
+  source_image_reference {
+    publisher = "Canonical"
+    offer     = "UbuntuServer"
+    sku       = "18.04-LTS"
+    version   = "latest"
+  }
 }
 
-resource "azurerm_lb" "LB" {
-  name                = "LB"
-  resource_group_name = azurerm_resource_group.KTHW_RG.name
-  location            = azurerm_resource_group.KTHW_RG.location
+# 05 - External access
+resource "azurerm_lb" "kthw_controller_loadbalancer" {
+  name                = "kthw_controller_loadbalancer"
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+  location            = azurerm_resource_group.kthw_rg.location
   sku                 = "Standard"
-  sku_tier            = "Regional"
 
   frontend_ip_configuration {
-    name                 = "PublicIP"
-    public_ip_address_id = azurerm_public_ip.KTHW_LB_IP.id
-    availability_zone    = "No-Zone"
+    name                 = "controller_loadbalancer_frontend"
+    public_ip_address_id = azurerm_public_ip.kthw_loadbalancer_public_ip.id
   }
-
 }
 
-resource "azurerm_lb_backend_address_pool" "KController_pool" {
-  loadbalancer_id = azurerm_lb.LB.id
-  name            = "KController_pool"
+resource "azurerm_lb_backend_address_pool" "controller_backend_pool" {
+  loadbalancer_id = azurerm_lb.kthw_controller_loadbalancer.id
+  name            = "controller_backend_pool"
 }
 
-resource "azurerm_lb_backend_address_pool_address" "KController_address" {
-  count                   = 2
-  name                    = "KController${count.index}"
-  backend_address_pool_id = azurerm_lb_backend_address_pool.KController_pool.id
-  virtual_network_id      = azurerm_virtual_network.KTHW_VNet.id
-  ip_address              = "10.10.10.1${count.index}"
+resource "azurerm_network_interface_backend_address_pool_association" "controller_backend_pool_addresses" {
+  count                   = var.num_controllers
+  backend_address_pool_id = azurerm_lb_backend_address_pool.controller_backend_pool.id
+  network_interface_id    = azurerm_network_interface.kthw_controller_nic[count.index].id
+  ip_configuration_name   = "internal"
 }
 
-resource "azurerm_lb_rule" "inbound_kubectl" {
-  resource_group_name            = azurerm_resource_group.KTHW_RG.name
-  loadbalancer_id                = azurerm_lb.LB.id
-  name                           = "inbound_kubectl"
+resource "azurerm_lb_probe" "controller_loadbalancer_probe" {
+  name                = "controller_health_probe"
+  resource_group_name = azurerm_resource_group.kthw_rg.name
+  loadbalancer_id     = azurerm_lb.kthw_controller_loadbalancer.id
+  protocol            = "Https"
+  port                = 6443
+  request_path        = "/healthz"
+}
+
+resource "azurerm_lb_rule" "controller_loadbalancer_rule" {
+  name                           = "ControlPlane"
+  resource_group_name            = azurerm_resource_group.kthw_rg.name
+  loadbalancer_id                = azurerm_lb.kthw_controller_loadbalancer.id
+  frontend_ip_configuration_name = "controller_loadbalancer_frontend"
   protocol                       = "Tcp"
-  frontend_port                  = "6443"
-  backend_port                   = "6443"
-  frontend_ip_configuration_name = "PublicIP"
-  backend_address_pool_ids       = [azurerm_lb_backend_address_pool.KController_pool.id]
-}
-
-resource "azurerm_route_table" "pod_route_table" {
-  name                = "pod_routing"
-  resource_group_name = azurerm_resource_group.KTHW_RG.name
-  location            = azurerm_resource_group.KTHW_RG.location
-}
-
-resource "azurerm_route" "pod_route" {
-  count                  = 3
-  name                   = "pod_route_${count.index}"
-  resource_group_name    = azurerm_resource_group.KTHW_RG.name
-  route_table_name       = azurerm_route_table.pod_route_table.name
-  address_prefix         = "10.20.${count.index}.0/24"
-  next_hop_type          = "VirtualAppliance"
-  next_hop_in_ip_address = "10.10.10.2${count.index}"
+  frontend_port                  = 6443
+  backend_port                   = 6443
+  backend_address_pool_ids       = [azurerm_lb_backend_address_pool.controller_backend_pool.id]
+  probe_id                       = azurerm_lb_probe.controller_loadbalancer_probe.id
 }

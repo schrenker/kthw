@@ -1,11 +1,13 @@
-Host 10.10.10.*
-     ProxyCommand ssh -W %h:%p azureuser@${ansibleJumpbox}
+Host 10.10.*.*
      IdentityFile ../priv.key
+     ProxyJump ${bastion}
+     StrictHostKeyChecking no
 
-Host ${ansibleJumpbox}
-     Hostname ${ansibleJumpbox}
-     User azureuser
+Host ${bastion}
+     Hostname ${bastion}
+     User ${admin_username}
      IdentityFile ../priv.key
+     StrictHostKeyChecking no
      ControlMaster auto
-     ControlPath ansible-%r@%h:%p
+     #ControlPath ansible-%r@%h:%p
      ControlPersist 5m

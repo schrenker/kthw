@@ -1,0 +1,31 @@
+---
+version: '3'
+
+tasks:
+  provision:
+    dir: terraform
+    cmds:
+      - terraform init
+      - terraform apply -auto-approve
+
+  destroy:
+    dir: terraform
+    cmds:
+      - terraform destroy -auto-approve
+
+  configure:
+    dir: ansible
+    cmds:
+      - ansible-playbook playbooks/all.yml
+
+  cleanup:
+    dir: /tmp
+    cmds:
+      - rm -f *crt *pem *kubeconfig *json
+
+  reset:
+    cmds:
+      - task: destroy
+      - task: cleanup
+      - task: provision
+...

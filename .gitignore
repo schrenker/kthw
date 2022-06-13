@@ -14,3 +14,5 @@ ansible/group_vars/all.yml
 
 terraform/.terraform*
 terraform/*.tfstate*
+
+.python-version

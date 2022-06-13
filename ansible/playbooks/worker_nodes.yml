@@ -1,5 +1,5 @@
 ---
-- hosts: KWorkers
+- hosts: worker
   become: true
   roles:
     - worker_node

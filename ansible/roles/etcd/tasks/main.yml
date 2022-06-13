@@ -58,7 +58,7 @@
   become: true
 
 - name: Get etcd peers string
-  script: ../scripts/etcd_peers.py "../inventory" "KControllers" "2380" 1
+  script: ../scripts/etcd_peers.py "../inventory" "controller" "2380" 1
   register: etcd_peers
   delegate_to: localhost
   run_once: true

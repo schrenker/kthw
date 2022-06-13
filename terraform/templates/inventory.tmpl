@@ -1,12 +1,12 @@
-[jumpbox]
-${ansibleJumpbox} ansible_ssh_private_key_file=../priv.key
+[bastion]
+${bastion_host} ansible_ssh_private_key_file=../priv.key
 
-[KControllers]
-%{ for index, ip in ansibleKControllers ~}
-kcontroller${index} ansible_host=${ip}
+[controller]
+%{ for index, ip in controllers ~}
+controller${index} ansible_host=${ip}
 %{ endfor ~}
 
-[KWorkers]
-%{ for index, ip in ansibleKWorkers ~}
-kworker${index} ansible_host=${ip} pod_cidr=10.20.${index}.0/24
+[worker]
+%{ for index, ip in workers ~}
+worker${index} ansible_host=${ip} pod_cidr=10.20.${index}.0/24
 %{ endfor ~}
