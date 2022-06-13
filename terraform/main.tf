@@ -2,6 +2,10 @@
 resource "azurerm_resource_group" "kthw_rg" {
   name     = "kthw_rg"
   location = "North Europe"
+  tags = {
+    env   = "kthw"
+    stage = "test"
+  }
 }
 
 # 02 - Networking
@@ -10,6 +14,10 @@ resource "azurerm_virtual_network" "kthw_vnet" {
   resource_group_name = azurerm_resource_group.kthw_rg.name
   location            = azurerm_resource_group.kthw_rg.location
   address_space       = ["10.10.0.0/16"]
+  tags = {
+    env   = "kthw"
+    stage = "test"
+  }
 }
 
 resource "azurerm_subnet" "kthw_bastion_subnet" {
@@ -39,6 +47,11 @@ resource "azurerm_public_ip" "kthw_bastion_public_ip" {
   location            = azurerm_resource_group.kthw_rg.location
   allocation_method   = "Static"
   sku                 = "Standard"
+  tags = {
+    env   = "kthw"
+    stage = "test"
+    group = "bastion"
+  }
 }
 
 resource "azurerm_public_ip" "kthw_loadbalancer_public_ip" {
@@ -47,12 +60,20 @@ resource "azurerm_public_ip" "kthw_loadbalancer_public_ip" {
   location            = azurerm_resource_group.kthw_rg.location
   allocation_method   = "Static"
   sku                 = "Standard"
+  tags = {
+    env   = "kthw"
+    stage = "test"
+  }
 }
 
 resource "azurerm_route_table" "kthw_route_table_pods" {
   name                = "kthw_route_table_pods"
   resource_group_name = azurerm_resource_group.kthw_rg.name
   location            = azurerm_resource_group.kthw_rg.location
+  tags = {
+    env   = "kthw"
+    stage = "test"
+  }
 }
 
 resource "azurerm_route" "pod_route" {
@@ -80,18 +101,33 @@ resource "azurerm_network_security_group" "kthw_controller_nsg" {
   name                = "kthw_controller_nsg"
   location            = azurerm_resource_group.kthw_rg.location
   resource_group_name = azurerm_resource_group.kthw_rg.name
+  tags = {
+    env   = "kthw"
+    stage = "test"
+    group = "controller"
+  }
 }
 
 resource "azurerm_network_security_group" "kthw_worker_nsg" {
   name                = "kthw_worker_nsg"
   location            = azurerm_resource_group.kthw_rg.location
   resource_group_name = azurerm_resource_group.kthw_rg.name
+  tags = {
+    env   = "kthw"
+    stage = "test"
+    group = "worker"
+  }
 }
 
 resource "azurerm_network_security_group" "kthw_bastion_nsg" {
   name                = "kthw_bastion_nsg"
   location            = azurerm_resource_group.kthw_rg.location
   resource_group_name = azurerm_resource_group.kthw_rg.name
+  tags = {
+    env   = "kthw"
+    stage = "test"
+    group = "bastion"
+  }
 }
 
 resource "azurerm_subnet_network_security_group_association" "nsg_controller_subnet_assoc" {
@@ -156,12 +192,22 @@ resource "azurerm_availability_set" "kthw_controller_as" {
   name                = "kthw_controller_as"
   resource_group_name = azurerm_resource_group.kthw_rg.name
   location            = azurerm_resource_group.kthw_rg.location
+  tags = {
+    env   = "kthw"
+    stage = "test"
+    group = "controller"
+  }
 }
 
 resource "azurerm_availability_set" "kthw_worker_as" {
   name                = "kthw_worker_as"
   resource_group_name = azurerm_resource_group.kthw_rg.name
   location            = azurerm_resource_group.kthw_rg.location
+  tags = {
+    env   = "kthw"
+    stage = "test"
+    group = "worker"
+  }
 }
 
 resource "azurerm_network_interface" "kthw_controller_nic" {
@@ -175,6 +221,12 @@ resource "azurerm_network_interface" "kthw_controller_nic" {
     subnet_id                     = azurerm_subnet.kthw_controller_subnet.id
     private_ip_address_allocation = "Static"
     private_ip_address            = "10.10.10.1${count.index}"
+  }
+
+  tags = {
+    env   = "kthw"
+    stage = "test"
+    group = "controller"
   }
 }
 
@@ -191,6 +243,12 @@ resource "azurerm_network_interface" "kthw_worker_nic" {
     private_ip_address_allocation = "Static"
     private_ip_address            = "10.10.20.1${count.index}"
   }
+
+  tags = {
+    env   = "kthw"
+    stage = "test"
+    group = "worker"
+  }
 }
 
 resource "azurerm_network_interface" "kthw_bastion_nic" {
@@ -204,6 +262,12 @@ resource "azurerm_network_interface" "kthw_bastion_nic" {
     private_ip_address_allocation = "Static"
     private_ip_address            = "10.10.0.10"
     public_ip_address_id          = azurerm_public_ip.kthw_bastion_public_ip.id
+  }
+
+  tags = {
+    env   = "kthw"
+    stage = "test"
+    group = "bastion"
   }
 }
 
@@ -236,6 +300,12 @@ resource "azurerm_linux_virtual_machine" "kthw_controller" {
     sku       = "18.04-LTS"
     version   = "latest"
   }
+
+  tags = {
+    env   = "kthw"
+    stage = "test"
+    group = "controller"
+  }
 }
 
 resource "azurerm_linux_virtual_machine" "kthw_worker" {
@@ -267,6 +337,12 @@ resource "azurerm_linux_virtual_machine" "kthw_worker" {
     sku       = "18.04-LTS"
     version   = "latest"
   }
+
+  tags = {
+    env   = "kthw"
+    stage = "test"
+    group = "worker"
+  }
 }
 
 resource "azurerm_linux_virtual_machine" "kthw_bastion" {
@@ -295,6 +371,12 @@ resource "azurerm_linux_virtual_machine" "kthw_bastion" {
     sku       = "18.04-LTS"
     version   = "latest"
   }
+
+  tags = {
+    env   = "kthw"
+    stage = "test"
+    group = "bastion"
+  }
 }
 
 # 05 - External access
@@ -307,6 +389,11 @@ resource "azurerm_lb" "kthw_controller_loadbalancer" {
   frontend_ip_configuration {
     name                 = "controller_loadbalancer_frontend"
     public_ip_address_id = azurerm_public_ip.kthw_loadbalancer_public_ip.id
+  }
+
+  tags = {
+    env   = "kthw"
+    stage = "test"
   }
 }
 
